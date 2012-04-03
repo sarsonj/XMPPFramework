@@ -8,9 +8,10 @@
 #import "XMPPJabberRPCModule.h"
 #import "XMPP.h"
 #import "XMPPIQ+JabberRPC.h"
-#import "XMPPIQ+JabberRPCResonse.h"
+#import "XMPPIQ+JabberRPCResponse.h"
 #import "XMPPLogging.h"
 #import "XMPPFramework.h"
+#import "XMPPCapabilities.h"
 
 #if ! __has_feature(objc_arc)
 #warning This file must be compiled with ARC. Use -fobjc-arc flag (or convert project to ARC).
@@ -19,7 +20,7 @@
 // Log levels: off, error, warn, info, verbose
 // Log flags: trace
 #if DEBUG
-  static const int xmppLogLevel = XMPP_LOG_LEVEL_WARN; // | XMPP_LOG_FLAG_TRACE;
+  static const int xmppLogLevel = XMPP_LOG_LEVEL_VERBOSE; // | XMPP_LOG_FLAG_TRACE;
 #else
   static const int xmppLogLevel = XMPP_LOG_LEVEL_WARN;
 #endif
@@ -220,7 +221,6 @@ NSString *const XMPPJabberRPCErrorDomain = @"XMPPJabberRPCErrorDomain";
 - (void)timeoutRemoveRpcID:(NSString *)elementID
 {
 	XMPPLogTrace();
-	
 	RPCID *rpcID = [rpcIDs objectForKey:elementID];
 	if (rpcID)
 	{
@@ -257,7 +257,8 @@ NSString *const XMPPJabberRPCErrorDomain = @"XMPPJabberRPCErrorDomain";
 			// check if this is a JabberRPC query
 			// we could check the query element, but we should be able to do a lookup based on the unique elementID
 			// because we send an ID, we should get one back
-			
+            NIDINFO(@"Looking for RPC ID: %@", elementID);
+            NIDINFO(@"Has?: %@", [rpcIDs objectForKey:elementID]);
 			RPCID *rpcID =  [rpcIDs objectForKey:elementID];
 			if (rpcID == nil)
 			{
@@ -275,7 +276,7 @@ NSString *const XMPPJabberRPCErrorDomain = @"XMPPJabberRPCErrorDomain";
 				response = [iq methodResponse:&error];
 				
 				if (error == nil) {
-					[multicastDelegate jabberRPC:self elementID:elementID didReceiveMethodResponse:response];
+					[multicastDelegate jabberRPC:self elementID:elementID didReceiveMethodResponse:response forIQ:iq];
 				} else {
 					[multicastDelegate jabberRPC:self elementID:elementID didReceiveError:error];
 				}

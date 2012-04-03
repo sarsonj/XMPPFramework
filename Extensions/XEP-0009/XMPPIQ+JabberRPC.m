@@ -15,7 +15,7 @@
 #endif
 
 
-@implementation XMPPIQ(JabberRPC)
+@implementation XMPPIQ (JabberRPC)
 
 +(XMPPIQ *)rpcTo:(XMPPJID *)jid methodName:(NSString *)method parameters:(NSArray *)parameters {
 	// Send JabberRPC element
@@ -52,10 +52,40 @@
 	return iq;
 }
 
+
++ (XMPPIQ *)replyTo:(XMPPIQ *)callingIQ parameters:(NSArray *)parameters {
+//    <iq type='result' id="elementID">
+//      <query xmlns='jabber:iq:rpc'>
+//        <methodResponse>
+//          <params>
+//            <param>
+//              <value><string>example</string></value>
+//            </param>
+//          </params>
+//        </methodResponse>
+//      </query>
+//    </iq>
+    XMPPIQ *iq = [XMPPIQ iqWithType:@"result" to:[callingIQ from] elementID: [callingIQ elementID]];
+    NSXMLElement *jabberRPC = [self elementRpcQuery];
+    NSXMLElement *methodResponse = [self elementMethodResponse];
+    NSXMLElement *params = [self elementParams];
+    for (id parameter in parameters) {
+        [params addChild:[self paramElementFromObject:parameter]];
+    }
+    [methodResponse addChild:params];
+    [jabberRPC addChild:methodResponse];
+    [iq addChild:jabberRPC];
+    return iq;
+}
+
 #pragma mark Element helper methods
 
 +(NSXMLElement *)elementRpcQuery {
 	return [NSXMLElement elementWithName:@"query" xmlns:@"jabber:iq:rpc"];
+}
+
++(NSXMLElement *)elementMethodResponse {
+	return [NSXMLElement elementWithName:@"methodResponse"];
 }
 
 +(NSXMLElement *)elementMethodCall {

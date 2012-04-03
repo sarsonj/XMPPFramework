@@ -10,13 +10,21 @@
 #import "XMPPIQ.h"
 
 
-@interface XMPPIQ(JabberRPC)
+@interface XMPPIQ (JabberRPC)
 
 /**
  * Creates and returns a new autoreleased XMPPIQ.
  * This is the only method you normally need to call.
  **/
 + (XMPPIQ *)rpcTo:(XMPPJID *)jid methodName:(NSString *)method parameters:(NSArray *)parameters;
+
+
+/**
+ * Reply to XMPP RPC call
+ **/
+
++ (XMPPIQ *)replyTo:(XMPPIQ *)call parameters:(NSArray *)parameters;
+
 
 #pragma mark -
 #pragma mark Element helper methods
@@ -28,6 +36,11 @@
 // returns a Jabber-RPC methodCall element
 //			<methodCall>
 +(NSXMLElement *)elementMethodCall;
+
+// returns a Jabber-RPC methodCall element
+//			<methodResponse>
++ (NSXMLElement *)elementMethodResponse;
+
 
 // returns a Jabber-RPC methodName element
 //				<methodName>method</methodName>

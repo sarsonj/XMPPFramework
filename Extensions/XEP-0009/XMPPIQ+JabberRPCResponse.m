@@ -1,11 +1,11 @@
 //
-//  XMPPIQ+JabberRPCResonse.m
+//  XMPPIQ+JabberRPCResponse.m
 //  XEP-0009
 //
 //  Created by Eric Chamberlain on 5/25/10.
 //
 
-#import "XMPPIQ+JabberRPCResonse.h"
+#import "XMPPIQ+JabberRPCResponse.h"
 #import "XMPPJabberRPCModule.h"
 #import "XMPPLogging.h"
 #import "NSData+XMPP.h"
@@ -17,17 +17,49 @@
 
 // Log levels: off, error, warn, info, verbose
 #if DEBUG
-  static const int xmppLogLevel = XMPP_LOG_LEVEL_WARN;
+  static const int xmppLogLevel = XMPP_LOG_LEVEL_VERBOSE;
 #else
   static const int xmppLogLevel = XMPP_LOG_LEVEL_WARN;
 #endif
 
-@implementation XMPPIQ(JabberRPCResonse)
+@implementation XMPPIQ (JabberRPCResponse)
 
 -(NSXMLElement *)methodResponseElement {
 	NSXMLElement *query = [self elementForName:@"query"];
 	return [query elementForName:@"methodResponse"];
 }
+
+
+-(NSXMLElement *)methodCallElement {
+	NSXMLElement *query = [self elementForName:@"query"];
+	return [query elementForName:@"methodCall"];
+}
+
+-(id)paramsFromCallElement {
+    NSXMLElement *methodCall = [self methodCallElement];
+    id call = [self objectFromElement:(NSXMLElement *)[methodCall childAtIndex:0]];
+    return call;
+}
+
+-(id)paramsFromResponseElement {
+    NSXMLElement *methodResponse = [self methodResponseElement];
+    id response = [self objectFromElement:(NSXMLElement *)[methodResponse childAtIndex:0]];
+    return response;
+}
+
+
+
+-(NSString *)methodName {
+    if ([self isMethodCall]) {
+        NSXMLElement* methodCall = [self methodCallElement];
+        return [[methodCall elementForName:@"methodName"] stringValue];
+    } else {
+        return nil;
+    }
+}
+
+
+
 
 // is this a Jabber RPC method response
 -(BOOL)isMethodResponse {
@@ -43,6 +75,26 @@
 	NSXMLElement *methodResponse = [self methodResponseElement];
 	return methodResponse != nil;
 }
+
+// is this a Jabber RPC method request
+- (BOOL)isMethodCall {
+    //	<iq to="fullJID" type="set" id="elementID">
+   	//		<query xmlns='jabber:iq:rpc'>
+   	//			<methodCall>
+   	//				<methodName>method</methodName>
+   	//				<params>
+   	//					<param>
+   	//						<value><string>example</string></value>
+   	//					</param>
+   	//					...
+   	//				</params>
+   	//			</methodCall>
+   	//		</query>
+   	//	</iq>
+    NSXMLElement *methodCall = [self methodCallElement];
+    return methodCall != nil;
+}
+
 
 -(BOOL)isFault {
 	/*
