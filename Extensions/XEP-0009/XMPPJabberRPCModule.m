@@ -257,8 +257,8 @@ NSString *const XMPPJabberRPCErrorDomain = @"XMPPJabberRPCErrorDomain";
 			// check if this is a JabberRPC query
 			// we could check the query element, but we should be able to do a lookup based on the unique elementID
 			// because we send an ID, we should get one back
-            NIDINFO(@"Looking for RPC ID: %@", elementID);
-            NIDINFO(@"Has?: %@", [rpcIDs objectForKey:elementID]);
+//            NIDINFO(@"Looking for RPC ID: %@", elementID);
+//            NIDINFO(@"Has?: %@", [rpcIDs objectForKey:elementID]);
 			RPCID *rpcID =  [rpcIDs objectForKey:elementID];
 			if (rpcID == nil)
 			{
@@ -304,9 +304,32 @@ NSString *const XMPPJabberRPCErrorDomain = @"XMPPJabberRPCErrorDomain";
 #ifdef _XMPP_CAPABILITIES_H
 		} else if ([iq isSetIQ]) {
 			// we would receive set when implementing Jabber-RPC server
-			
-			[multicastDelegate jabberRPC:self didReceiveSetIQ:iq];
-#endif		
+            id del;
+            dispatch_queue_t dq;
+
+            SEL selector = @selector(jabberRPC:didReceiveSetIQ:);
+
+            GCDMulticastDelegateEnumerator *delegateEnumerator = [multicastDelegate delegateEnumerator];
+
+            dispatch_semaphore_t delSemaphore = dispatch_semaphore_create(0);
+            dispatch_group_t delGroup = dispatch_group_create();
+
+            while ([delegateEnumerator getNextDelegate:&del delegateQueue:&dq forSelector:selector]) {
+                dispatch_group_async(delGroup, dq, ^{
+	                @autoreleasepool {
+	                    if ([del jabberRPC:self didReceiveSetIQ:iq]) {
+	                        dispatch_semaphore_signal(delSemaphore);
+	                    }
+                    }
+                });
+            }
+            dispatch_group_wait(delGroup, DISPATCH_TIME_FOREVER);
+
+            // Did any of the delegates respond to the IQ?
+
+            BOOL responded = (dispatch_semaphore_wait(delSemaphore, DISPATCH_TIME_NOW) == 0);
+            return responded;
+#endif
 		}
 		
 		// Jabber-RPC doesn't use get iq type

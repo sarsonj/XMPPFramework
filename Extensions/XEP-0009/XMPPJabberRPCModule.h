@@ -45,5 +45,5 @@ extern NSString *const XMPPJabberRPCErrorDomain;
 
 
 // sent when a Jabber-RPC server request is received
--(void)jabberRPC:(XMPPJabberRPCModule *)sender didReceiveSetIQ:(XMPPIQ *)iq;
+-(BOOL)jabberRPC:(XMPPJabberRPCModule *)sender didReceiveSetIQ:(XMPPIQ *)iq;
 @end
