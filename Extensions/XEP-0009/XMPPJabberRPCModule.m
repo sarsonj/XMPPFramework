@@ -328,6 +328,10 @@ NSString *const XMPPJabberRPCErrorDomain = @"XMPPJabberRPCErrorDomain";
             // Did any of the delegates respond to the IQ?
 
             BOOL responded = (dispatch_semaphore_wait(delSemaphore, DISPATCH_TIME_NOW) == 0);
+            
+            dispatch_release(delSemaphore);
+            dispatch_release(delGroup);
+            
             return responded;
 #endif
 		}
