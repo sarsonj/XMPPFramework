@@ -36,8 +36,12 @@
 }
 
 -(id)paramsFromCallElement {
+
     NSXMLElement *methodCall = [self methodCallElement];
-    id call = [self objectFromElement:(NSXMLElement *)[methodCall childAtIndex:0]];
+    NIDINFO(@"Method call %@", [methodCall XMLString]);
+    NSXMLElement *params = (NSXMLElement *)[methodCall childAtIndex:1];
+    NIDINFO(@"Method params %@", [params XMLString]);
+    id call = [self objectFromElement: params];
     return call;
 }
 
