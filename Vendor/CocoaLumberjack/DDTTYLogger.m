@@ -1212,7 +1212,7 @@ static DDTTYLogger *sharedInstance;
 		NSUInteger msgLen = [logMsg lengthOfBytesUsingEncoding:NSUTF8StringEncoding];
 		const BOOL useStack = msgLen < (1024 * 4);
 		
-		char msgStack[useStack ? (msgLen + 1) : 0];
+		char msgStack[useStack ? (msgLen + 1) : 1]; // Analyzer doesn't like zero-size array, hence the 1
 		char *msg = useStack ? msgStack : (char *)malloc(msgLen + 1);
 		
 		[logMsg getCString:msg maxLength:(msgLen + 1) encoding:NSUTF8StringEncoding];
@@ -1473,7 +1473,7 @@ static DDTTYLogger *sharedInstance;
 - (NSString *)description
 {
 	return [NSString stringWithFormat:
-			@"<DDTTYLoggerColorProfile: %x mask:%i ctxt:%i fg:%u,%u,%u bg:%u,%u,%u fgCode:%@ bgCode:%@>",
+			@"<DDTTYLoggerColorProfile: %p mask:%i ctxt:%i fg:%u,%u,%u bg:%u,%u,%u fgCode:%@ bgCode:%@>",
 			self, mask, context, fg_r, fg_g, fg_b, bg_r, bg_g, bg_b, fgCodeRaw, bgCodeRaw];
 }
 
