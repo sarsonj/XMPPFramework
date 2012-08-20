@@ -1228,6 +1228,24 @@ enum XMPPStreamConfig
 		dispatch_sync(xmppQueue, block);
 }
 
+
+- (void)disconnectWithAutoReconnect
+{
+	XMPPLogTrace();
+
+	dispatch_block_t block = ^{ @autoreleasepool {
+
+				[asyncSocket disconnect];
+	}};
+
+	if (dispatch_get_current_queue() == xmppQueue)
+		block();
+	else
+		dispatch_sync(xmppQueue, block);
+}
+
+
+
 - (void)disconnectAfterSending
 {
 	XMPPLogTrace();

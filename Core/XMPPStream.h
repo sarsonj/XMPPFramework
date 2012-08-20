@@ -292,6 +292,8 @@ typedef enum XMPPStreamErrorCode XMPPStreamErrorCode;
 **/
 - (void)disconnect;
 
+- (void)disconnectWithAutoReconnect;
+
 /**
  * Disconnects from the remote host by sending the terminating </stream:stream> element,
  * and then closing the underlying TCP socket connection.
