@@ -104,7 +104,7 @@ enum XMPPRoomState
 		
 	}};
 	
-	if (dispatch_get_current_queue() == moduleQueue)
+	if (dispatch_get_specific(moduleQueueTag))
 		block();
 	else
 		dispatch_sync(moduleQueue, block);
@@ -150,7 +150,7 @@ enum XMPPRoomState
 
 - (XMPPJID *)myRoomJID
 {
-	if (dispatch_get_current_queue() == moduleQueue)
+	if (dispatch_get_specific(moduleQueueTag))
 	{
 		return myRoomJID;
 	}
@@ -168,7 +168,7 @@ enum XMPPRoomState
 
 - (NSString *)myNickname
 {
-	if (dispatch_get_current_queue() == moduleQueue)
+	if (dispatch_get_specific(moduleQueueTag))
 	{
 		return myNickname;
 	}
@@ -186,7 +186,7 @@ enum XMPPRoomState
 
 - (NSString *)roomSubject
 {
-	if (dispatch_get_current_queue() == moduleQueue)
+	if (dispatch_get_specific(moduleQueueTag))
 	{
 		return roomSubject;
 	}
@@ -210,7 +210,7 @@ enum XMPPRoomState
 		result = (state & kXMPPRoomStateJoined) ? YES : NO;
 	};
 	
-	if (dispatch_get_current_queue() == moduleQueue)
+	if (dispatch_get_specific(moduleQueueTag))
 		block();
 	else
 		dispatch_sync(moduleQueue, block);
@@ -229,7 +229,7 @@ enum XMPPRoomState
 		result = [myOccupant.affiliation isEqualToString:@"owner"];
 	};
 	
-	if (dispatch_get_current_queue() == moduleQueue)
+	if (dispatch_get_specific(moduleQueueTag))
 		block();
 	else
 		dispatch_sync(moduleQueue, block);
@@ -301,7 +301,7 @@ enum XMPPRoomState
 		
 	}};
 	
-	if (dispatch_get_current_queue() == moduleQueue)
+	if (dispatch_get_specific(moduleQueueTag))
 		block();
 	else
 		dispatch_async(moduleQueue, block);
@@ -373,7 +373,7 @@ enum XMPPRoomState
 		
 	}};
 	
-	if (dispatch_get_current_queue() == moduleQueue)
+	if (dispatch_get_specific(moduleQueueTag))
 		block();
 	else
 		dispatch_async(moduleQueue, block);
@@ -471,15 +471,18 @@ enum XMPPRoomState
 		}
 	}};
 	
-	if (dispatch_get_current_queue() == moduleQueue)
+	if (dispatch_get_specific(moduleQueueTag))
 		block();
 	else
 		dispatch_async(moduleQueue, block);
 }
 
-- (void)chageNickname:(NSString *)newNickname
+- (void)changeNickname:(NSString *)newNickname
 {
-	// Todo
+	myNickname = [newNickname copy];
+    myRoomJID = [XMPPJID jidWithUser:[roomJID user] domain:[roomJID domain] resource:myNickname];
+    XMPPPresence *presence = [XMPPPresence presenceWithType:nil to:myRoomJID];
+    [xmppStream sendElement:presence];
 }
 
 - (void)changeRoomSubject:(NSString *)newRoomSubject
@@ -502,7 +505,7 @@ enum XMPPRoomState
 		// </iq>
 		
 		NSXMLElement *query = [iq elementForName:@"query" xmlns:XMPPMUCAdminNamespace];
-		NSArray *items = [query elementsForName:@"items"];
+		NSArray *items = [query elementsForName:@"item"];
 		
 		[multicastDelegate xmppRoom:self didFetchBanList:items];
 	}
@@ -544,7 +547,7 @@ enum XMPPRoomState
 		              timeout:60.0];
 	}};
 	
-	if (dispatch_get_current_queue() == moduleQueue)
+	if (dispatch_get_specific(moduleQueueTag))
 		block();
 	else
 		dispatch_async(moduleQueue, block);
@@ -563,7 +566,7 @@ enum XMPPRoomState
 		// </iq>
 		
 		NSXMLElement *query = [iq elementForName:@"query" xmlns:XMPPMUCAdminNamespace];
-		NSArray *items = [query elementsForName:@"items"];
+		NSArray *items = [query elementsForName:@"item"];
 		
 		[multicastDelegate xmppRoom:self didFetchMembersList:items];
 	}
@@ -605,7 +608,7 @@ enum XMPPRoomState
 		              timeout:60.0];
 	}};
 	
-	if (dispatch_get_current_queue() == moduleQueue)
+	if (dispatch_get_specific(moduleQueueTag))
 		block();
 	else
 		dispatch_async(moduleQueue, block);
@@ -626,7 +629,7 @@ enum XMPPRoomState
 		// </iq>
 		
 		NSXMLElement *query = [iq elementForName:@"query" xmlns:XMPPMUCAdminNamespace];
-		NSArray *items = [query elementsForName:@"items"];
+		NSArray *items = [query elementsForName:@"item"];
 		
 		[multicastDelegate xmppRoom:self didFetchModeratorsList:items];
 	}
@@ -667,7 +670,7 @@ enum XMPPRoomState
 		
 	}};
 	
-	if (dispatch_get_current_queue() == moduleQueue)
+	if (dispatch_get_specific(moduleQueueTag))
 		block();
 	else
 		dispatch_async(moduleQueue, block);
@@ -719,7 +722,7 @@ enum XMPPRoomState
 		
 	}};
 	
-	if (dispatch_get_current_queue() == moduleQueue)
+	if (dispatch_get_specific(moduleQueueTag))
 		block();
 	else
 		dispatch_async(moduleQueue, block);
@@ -751,7 +754,7 @@ enum XMPPRoomState
 		
 	}};
 	
-	if (dispatch_get_current_queue() == moduleQueue)
+	if (dispatch_get_specific(moduleQueueTag))
 		block();
 	else
 		dispatch_async(moduleQueue, block);
@@ -771,7 +774,7 @@ enum XMPPRoomState
 	}
 }
 
-- (void)destoryRoom
+- (void)destroyRoom
 {
 	dispatch_block_t block = ^{ @autoreleasepool {
 		
@@ -801,7 +804,7 @@ enum XMPPRoomState
 		
 	}};
 	
-	if (dispatch_get_current_queue() == moduleQueue)
+	if (dispatch_get_specific(moduleQueueTag))
 		block();
 	else
 		dispatch_async(moduleQueue, block);
@@ -846,7 +849,7 @@ enum XMPPRoomState
 		
 	}};
 	
-	if (dispatch_get_current_queue() == moduleQueue)
+	if (dispatch_get_specific(moduleQueueTag))
 		block();
 	else
 		dispatch_async(moduleQueue, block);
@@ -875,7 +878,7 @@ enum XMPPRoomState
 		
 	}};
 	
-	if (dispatch_get_current_queue() == moduleQueue)
+	if (dispatch_get_specific(moduleQueueTag))
 		block();
 	else
 		dispatch_async(moduleQueue, block);

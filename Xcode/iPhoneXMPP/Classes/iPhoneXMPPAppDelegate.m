@@ -73,7 +73,7 @@
 		dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, 0.0 * NSEC_PER_SEC);
 		dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
 			
-			[navigationController presentModalViewController:settingsViewController animated:YES];
+			[navigationController presentViewController:settingsViewController animated:YES completion:NULL];
 		});
 	}
 		
@@ -302,7 +302,7 @@
 	password = @"JPYqkgr9rV4zfAK";
 
 	NSError *error = nil;
-	if (![xmppStream connect:&error])
+	if (![xmppStream connectWithTimeout:XMPPStreamTimeoutNone error:&error])
 	{
 		UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:@"Error connecting" 
 		                                                    message:@"See console for error details." 

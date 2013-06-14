@@ -1,7 +1,7 @@
 #import "XMPPMessageArchivingCoreDataStorage.h"
 #import "XMPPCoreDataStorageProtected.h"
 #import "XMPPLogging.h"
-#import "XMPPElement+Delay.h"
+#import "NSXMLElement+XEP_0203.h"
 #import "XMPPMessage+XEP_0085.h"
 
 #if ! __has_feature(objc_arc)
@@ -257,7 +257,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 		result = messageEntityName;
 	};
 	
-	if (dispatch_get_current_queue() == storageQueue)
+	if (dispatch_get_specific(storageQueueTag))
 		block();
 	else
 		dispatch_sync(storageQueue, block);
@@ -271,7 +271,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 		messageEntityName = entityName;
 	};
 	
-	if (dispatch_get_current_queue() == storageQueue)
+	if (dispatch_get_specific(storageQueueTag))
 		block();
 	else
 		dispatch_async(storageQueue, block);
@@ -285,7 +285,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 		result = contactEntityName;
 	};
 	
-	if (dispatch_get_current_queue() == storageQueue)
+	if (dispatch_get_specific(storageQueueTag))
 		block();
 	else
 		dispatch_sync(storageQueue, block);
@@ -299,7 +299,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 		contactEntityName = entityName;
 	};
 	
-	if (dispatch_get_current_queue() == storageQueue)
+	if (dispatch_get_specific(storageQueueTag))
 		block();
 	else
 		dispatch_async(storageQueue, block);

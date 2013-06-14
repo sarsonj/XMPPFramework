@@ -7,32 +7,6 @@
 #warning This file must be compiled with ARC. Use -fobjc-arc flag (or convert project to ARC).
 #endif
 
-/**
- * Does ARC support support GCD objects?
- * It does if the minimum deployment target is iOS 6+ or Mac OS X 10.8+
-**/
-#if TARGET_OS_IPHONE
-
-  // Compiling for iOS
-
-  #if __IPHONE_OS_VERSION_MIN_REQUIRED >= 60000 // iOS 6.0 or later
-    #define NEEDS_DISPATCH_RETAIN_RELEASE 0
-  #else                                         // iOS 5.X or earlier
-    #define NEEDS_DISPATCH_RETAIN_RELEASE 1
-  #endif
-
-#else
-
-  // Compiling for Mac OS X
-
-  #if MAC_OS_X_VERSION_MIN_REQUIRED >= 1080     // Mac OS X 10.8 or later
-    #define NEEDS_DISPATCH_RETAIN_RELEASE 0
-  #else
-    #define NEEDS_DISPATCH_RETAIN_RELEASE 1     // Mac OS X 10.7 or earlier
-  #endif
-
-#endif
-
 // Log levels: off, error, warn, info, verbose
 // Log flags: trace
 #if DEBUG
@@ -107,6 +81,7 @@
 @dynamic xmppCapabilitiesStorage;
 @dynamic autoFetchHashedCapabilities;
 @dynamic autoFetchNonHashedCapabilities;
+@dynamic autoFetchMyServerCapabilities;
 
 - (id)init
 {
@@ -169,34 +144,13 @@
 		
 		autoFetchHashedCapabilities = YES;
 		autoFetchNonHashedCapabilities = NO;
+		autoFetchMyServerCapabilities = NO;
 	}
 	return self;
 }
 
-- (BOOL)activate:(XMPPStream *)aXmppStream
-{
-	if ([super activate:aXmppStream])
-	{
-		// Custom code goes here (if needed)
-		
-		return YES;
-	}
-	
-	return NO;
-}
-
-- (void)deactivate
-{
-	// Custom code goes here (if needed)
-	
-	[super deactivate];
-}
-
 - (void)dealloc
-{
-	
-	
-	
+{	
 	for (GCDTimerWrapper *timerWrapper in discoTimerJidDict)
 	{
 		[timerWrapper cancel];
@@ -221,7 +175,7 @@
 		result = autoFetchHashedCapabilities;
 	};
 	
-	if (dispatch_get_current_queue() == moduleQueue)
+	if (dispatch_get_specific(moduleQueueTag))
 		block();
 	else
 		dispatch_sync(moduleQueue, block);
@@ -235,7 +189,7 @@
 		autoFetchHashedCapabilities = flag;
 	};
 	
-	if (dispatch_get_current_queue() == moduleQueue)
+	if (dispatch_get_specific(moduleQueueTag))
 		block();
 	else
 		dispatch_async(moduleQueue, block);
@@ -249,7 +203,7 @@
 		result = autoFetchNonHashedCapabilities;
 	};
 	
-	if (dispatch_get_current_queue() == moduleQueue)
+	if (dispatch_get_specific(moduleQueueTag))
 		block();
 	else
 		dispatch_sync(moduleQueue, block);
@@ -263,7 +217,35 @@
 		autoFetchNonHashedCapabilities = flag;
 	};
 	
-	if (dispatch_get_current_queue() == moduleQueue)
+	if (dispatch_get_specific(moduleQueueTag))
+		block();
+	else
+		dispatch_async(moduleQueue, block);
+}
+
+- (BOOL)autoFetchMyServerCapabilities
+{
+	__block BOOL result = NO;
+	
+	dispatch_block_t block = ^{
+		result = autoFetchMyServerCapabilities;
+	};
+	
+	if (dispatch_get_specific(moduleQueueTag))
+		block();
+	else
+		dispatch_sync(moduleQueue, block);
+	
+	return result;
+}
+
+- (void)setAutoFetchMyServerCapabilities:(BOOL)flag
+{
+	dispatch_block_t block = ^{
+		autoFetchMyServerCapabilities = flag;
+	};
+	
+	if (dispatch_get_specific(moduleQueueTag))
 		block();
 	else
 		dispatch_async(moduleQueue, block);
@@ -655,7 +637,7 @@ static NSInteger sortFieldValues(NSXMLElement *value1, NSXMLElement *value2, voi
 - (void)collectMyCapabilities
 {
 	// This method must be invoked on the moduleQueue
-	NSAssert(dispatch_get_current_queue() == moduleQueue, @"Invoked on incorrect queue");
+	NSAssert(dispatch_get_specific(moduleQueueTag), @"Invoked on incorrect queue");
 	
 	XMPPLogTrace();
 	
@@ -690,9 +672,11 @@ static NSInteger sortFieldValues(NSXMLElement *value1, NSXMLElement *value2, voi
 	
 	// Now prompt the delegates to add any additional features.
 	
-	SEL selector = @selector(xmppCapabilities:collectingMyCapabilities:);
-	
-	if (![multicastDelegate hasDelegateThatRespondsToSelector:selector])
+	SEL collectingMyCapabilitiesSelector = @selector(xmppCapabilities:collectingMyCapabilities:);
+	SEL myFeaturesForXMPPCapabilitiesSelector = @selector(myFeaturesForXMPPCapabilities:);
+		
+	if (![multicastDelegate hasDelegateThatRespondsToSelector:collectingMyCapabilitiesSelector]
+		&& ![multicastDelegate hasDelegateThatRespondsToSelector:myFeaturesForXMPPCapabilitiesSelector])
 	{
 		// None of the delegates implement the method.
 		// Use a shortcut.
@@ -704,24 +688,57 @@ static NSInteger sortFieldValues(NSXMLElement *value1, NSXMLElement *value2, voi
 		// Query all interested delegates.
 		// This must be done serially to allow them to alter the element in a thread-safe manner.
 		
-		GCDMulticastDelegateEnumerator *delegateEnumerator = [multicastDelegate delegateEnumerator];
+		GCDMulticastDelegateEnumerator *collectingMyCapabilitiesDelegateEnumerator = [multicastDelegate delegateEnumerator];
+		GCDMulticastDelegateEnumerator *myFeaturesForXMPPCapabilitiesDelegateEnumerator = [multicastDelegate delegateEnumerator];
+
 		
 		dispatch_queue_t concurrentQueue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
 		dispatch_async(concurrentQueue, ^{ @autoreleasepool {
 			
-			// Allow delegates to modify outgoing element
-			
+						
 			id del;
 			dispatch_queue_t dq;
 			
-			while ([delegateEnumerator getNextDelegate:&del delegateQueue:&dq forSelector:selector])
+			while ([collectingMyCapabilitiesDelegateEnumerator getNextDelegate:&del delegateQueue:&dq forSelector:collectingMyCapabilitiesSelector])
 			{
 				dispatch_sync(dq, ^{ @autoreleasepool {
 					
 					[del xmppCapabilities:self collectingMyCapabilities:query];
 				}});
 			}
-			
+						
+			while ([myFeaturesForXMPPCapabilitiesDelegateEnumerator getNextDelegate:&del delegateQueue:&dq forSelector:myFeaturesForXMPPCapabilitiesSelector])
+			{
+				dispatch_sync(dq, ^{ @autoreleasepool {
+					
+					NSArray *features =  [del myFeaturesForXMPPCapabilities:self];
+					
+					for(NSString *feature in features){
+					
+						BOOL found = NO;
+						
+						//Check to see if the feature is already in my capabilities
+						for (NSXMLElement *childElement in query.children) {
+							
+							if([[childElement attributeStringValueForName:@"var"] isEqualToString:feature])
+							{
+								found = YES;
+								break;
+							}
+						}
+						
+						//The feature is not already in our capabilities so add it
+						if(!found)
+						{
+							NSXMLElement *featureElement = [NSXMLElement elementWithName:@"feature"];
+							[featureElement addAttributeWithName:@"var" stringValue:feature];
+							[query addChild:featureElement];
+						}
+					}
+					
+				}});
+			}
+						
 			dispatch_async(moduleQueue, ^{ @autoreleasepool {
 				
 				[self continueCollectMyCapabilities:query];
@@ -734,7 +751,7 @@ static NSInteger sortFieldValues(NSXMLElement *value1, NSXMLElement *value2, voi
 - (void)continueCollectMyCapabilities:(NSXMLElement *)query
 {
 	// This method must be invoked on the moduleQueue
-	NSAssert(dispatch_get_current_queue() == moduleQueue, @"Invoked on incorrect queue");
+	NSAssert(dispatch_get_specific(moduleQueueTag), @"Invoked on incorrect queue");
 	
 	XMPPLogTrace();
 	
@@ -790,7 +807,7 @@ static NSInteger sortFieldValues(NSXMLElement *value1, NSXMLElement *value2, voi
 		[self collectMyCapabilities];
 	}};
 	
-	if (dispatch_get_current_queue() == moduleQueue)
+	if (dispatch_get_specific(moduleQueueTag))
 		block();
 	else
 		dispatch_async(moduleQueue, block);
@@ -924,7 +941,7 @@ static NSInteger sortFieldValues(NSXMLElement *value1, NSXMLElement *value2, voi
 		
 	}};
 	
-	if (dispatch_get_current_queue() == moduleQueue)
+	if (dispatch_get_specific(moduleQueueTag))
 		block();
 	else
 		dispatch_async(moduleQueue, block);
@@ -937,7 +954,7 @@ static NSInteger sortFieldValues(NSXMLElement *value1, NSXMLElement *value2, voi
 - (void)handlePresenceCapabilities:(NSXMLElement *)c fromJID:(XMPPJID *)jid
 {
 	// This method must be invoked on the moduleQueue
-	NSAssert(dispatch_get_current_queue() == moduleQueue, @"Invoked on incorrect queue");
+	NSAssert(dispatch_get_specific(moduleQueueTag), @"Invoked on incorrect queue");
 	
 	XMPPLogTrace2(@"%@: %@ %@", THIS_FILE, THIS_METHOD, jid);
 	
@@ -1069,7 +1086,7 @@ static NSInteger sortFieldValues(NSXMLElement *value1, NSXMLElement *value2, voi
 - (void)handleLegacyPresenceCapabilities:(NSXMLElement *)c fromJID:(XMPPJID *)jid
 {
 	// This method must be invoked on the moduleQueue
-	NSAssert(dispatch_get_current_queue() == moduleQueue, @"Invoked on incorrect queue");
+	NSAssert(dispatch_get_specific(moduleQueueTag), @"Invoked on incorrect queue");
 	
 	XMPPLogTrace2(@"%@: %@ %@", THIS_FILE, THIS_METHOD, jid);
 	
@@ -1140,7 +1157,7 @@ static NSInteger sortFieldValues(NSXMLElement *value1, NSXMLElement *value2, voi
 - (void)handleDiscoRequest:(XMPPIQ *)iqRequest
 {
 	// This method must be invoked on the moduleQueue
-	NSAssert(dispatch_get_current_queue() == moduleQueue, @"Invoked on incorrect queue");
+	NSAssert(dispatch_get_specific(moduleQueueTag), @"Invoked on incorrect queue");
 	
 	XMPPLogTrace();
 	
@@ -1184,7 +1201,7 @@ static NSInteger sortFieldValues(NSXMLElement *value1, NSXMLElement *value2, voi
 - (void)handleDiscoResponse:(NSXMLElement *)querySubElement fromJID:(XMPPJID *)jid
 {
 	// This method must be invoked on the moduleQueue
-	NSAssert(dispatch_get_current_queue() == moduleQueue, @"Invoked on incorrect queue");
+	NSAssert(dispatch_get_specific(moduleQueueTag), @"Invoked on incorrect queue");
 	
 	XMPPLogTrace();
 	
@@ -1274,7 +1291,7 @@ static NSInteger sortFieldValues(NSXMLElement *value1, NSXMLElement *value2, voi
 - (void)handleDiscoErrorResponse:(NSXMLElement *)querySubElement fromJID:(XMPPJID *)jid
 {
 	// This method must be invoked on the moduleQueue
-	NSAssert(dispatch_get_current_queue() == moduleQueue, @"Invoked on incorrect queue");
+	NSAssert(dispatch_get_specific(moduleQueueTag), @"Invoked on incorrect queue");
 	
 	XMPPLogTrace();
 	
@@ -1309,7 +1326,7 @@ static NSInteger sortFieldValues(NSXMLElement *value1, NSXMLElement *value2, voi
 - (void)maybeQueryNextJidWithHashKey:(NSString *)key dueToHashMismatch:(BOOL)hashMismatch
 {
 	// This method must be invoked on the moduleQueue
-	NSAssert(dispatch_get_current_queue() == moduleQueue, @"Invoked on incorrect queue");
+	NSAssert(dispatch_get_specific(moduleQueueTag), @"Invoked on incorrect queue");
 	
 	XMPPLogTrace();
 	
@@ -1411,6 +1428,16 @@ static NSInteger sortFieldValues(NSXMLElement *value1, NSXMLElement *value2, voi
 	if (myCapabilitiesQuery == nil)
 	{
 		[self collectMyCapabilities];
+	}
+}
+
+- (void)xmppStreamDidAuthenticate:(XMPPStream *)sender
+{	
+	if (autoFetchMyServerCapabilities)
+	{
+		XMPPJID *myJID = [xmppStream myJID];
+		XMPPJID *myServerJID = [XMPPJID jidWithUser:nil domain:[myJID domain] resource:nil];
+		[self fetchCapabilitiesForJID:myServerJID];
 	}
 }
 
@@ -1542,8 +1569,16 @@ static NSInteger sortFieldValues(NSXMLElement *value1, NSXMLElement *value2, voi
 		else if (myCapabilitiesC)
 		{
 			NSXMLElement *c = [myCapabilitiesC copy];
-			
-			[presence addChild:c];
+			NSXMLElement *oldC = [presence elementForName:c.name xmlns:c.xmlns];
+			if (oldC)
+			{
+				[presence removeChildAtIndex:[presence.children indexOfObject:oldC]];
+				[presence addChild:c];
+			}
+			else
+			{
+				[presence addChild:c];
+			}
 		}
 	}
 	
@@ -1557,7 +1592,7 @@ static NSInteger sortFieldValues(NSXMLElement *value1, NSXMLElement *value2, voi
 - (void)setupTimeoutForDiscoRequestFromJID:(XMPPJID *)jid
 {
 	// This method must be invoked on the moduleQueue
-	NSAssert(dispatch_get_current_queue() == moduleQueue, @"Invoked on incorrect queue");
+	NSAssert(dispatch_get_specific(moduleQueueTag), @"Invoked on incorrect queue");
 	
 	XMPPLogTrace();
 	
@@ -1572,7 +1607,7 @@ static NSInteger sortFieldValues(NSXMLElement *value1, NSXMLElement *value2, voi
 		[self processTimeoutWithJID:jid];
 		
 		dispatch_source_cancel(timer);
-		#if NEEDS_DISPATCH_RETAIN_RELEASE
+		#if !OS_OBJECT_USE_OBJC
 		dispatch_release(timer);
 		#endif
 	}});
@@ -1593,7 +1628,7 @@ static NSInteger sortFieldValues(NSXMLElement *value1, NSXMLElement *value2, voi
 - (void)setupTimeoutForDiscoRequestFromJID:(XMPPJID *)jid withHashKey:(NSString *)key
 {
 	// This method must be invoked on the moduleQueue
-	NSAssert(dispatch_get_current_queue() == moduleQueue, @"Invoked on incorrect queue");
+	NSAssert(dispatch_get_specific(moduleQueueTag), @"Invoked on incorrect queue");
 	
 	XMPPLogTrace();
 	
@@ -1608,7 +1643,7 @@ static NSInteger sortFieldValues(NSXMLElement *value1, NSXMLElement *value2, voi
 		[self processTimeoutWithHashKey:key];
 		
 		dispatch_source_cancel(timer);
-		#if NEEDS_DISPATCH_RETAIN_RELEASE
+		#if !OS_OBJECT_USE_OBJC
 		dispatch_release(timer);
 		#endif
 	}});
@@ -1629,7 +1664,7 @@ static NSInteger sortFieldValues(NSXMLElement *value1, NSXMLElement *value2, voi
 - (void)cancelTimeoutForDiscoRequestFromJID:(XMPPJID *)jid
 {
 	// This method must be invoked on the moduleQueue
-	NSAssert(dispatch_get_current_queue() == moduleQueue, @"Invoked on incorrect queue");
+	NSAssert(dispatch_get_specific(moduleQueueTag), @"Invoked on incorrect queue");
 	
 	XMPPLogTrace();
 	
@@ -1644,7 +1679,7 @@ static NSInteger sortFieldValues(NSXMLElement *value1, NSXMLElement *value2, voi
 - (void)processTimeoutWithHashKey:(NSString *)key
 {
 	// This method must be invoked on the moduleQueue
-	NSAssert(dispatch_get_current_queue() == moduleQueue, @"Invoked on incorrect queue");
+	NSAssert(dispatch_get_specific(moduleQueueTag), @"Invoked on incorrect queue");
 	
 	XMPPLogTrace();
 	
@@ -1654,7 +1689,7 @@ static NSInteger sortFieldValues(NSXMLElement *value1, NSXMLElement *value2, voi
 - (void)processTimeoutWithJID:(XMPPJID *)jid
 {
 	// This method must be invoked on the moduleQueue
-	NSAssert(dispatch_get_current_queue() == moduleQueue, @"Invoked on incorrect queue");
+	NSAssert(dispatch_get_specific(moduleQueueTag), @"Invoked on incorrect queue");
 	
 	XMPPLogTrace();
 	
@@ -1685,7 +1720,7 @@ static NSInteger sortFieldValues(NSXMLElement *value1, NSXMLElement *value2, voi
 	if ((self = [super init]))
 	{
 		timer = aTimer;
-		#if NEEDS_DISPATCH_RETAIN_RELEASE
+		#if !OS_OBJECT_USE_OBJC
 		dispatch_retain(timer);
 		#endif
 	}
@@ -1697,7 +1732,7 @@ static NSInteger sortFieldValues(NSXMLElement *value1, NSXMLElement *value2, voi
 	if (timer)
 	{
 		dispatch_source_cancel(timer);
-		#if NEEDS_DISPATCH_RETAIN_RELEASE
+		#if !OS_OBJECT_USE_OBJC
 		dispatch_release(timer);
 		#endif
 		timer = NULL;
