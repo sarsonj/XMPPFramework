@@ -220,8 +220,8 @@
 	
 
 	// You may need to alter these settings depending on the server you're connecting to
-	allowSelfSignedCertificates = NO;
-	allowSSLHostNameMismatch = NO;
+	allowSelfSignedCertificates = YES;
+	allowSSLHostNameMismatch = YES;
 }
 
 - (void)teardownStream
@@ -297,8 +297,9 @@
 		return NO;
 	}
 
-	[xmppStream setMyJID:[XMPPJID jidWithString:myJID]];
-	password = myPassword;
+	[xmppStream setMyJID:[XMPPJID jidWithString:@"63eb7164052ac4476968b5423dd475f6zmizd__0954e@babyam.tappytaps.com"]];
+    [xmppStream setHostName:@"dogmonitor.tappytaps.com"];
+	password = @"JPYqkgr9rV4zfAK";
 
 	NSError *error = nil;
 	if (![xmppStream connect:&error])

@@ -25,22 +25,20 @@
 @implementation XMPPIQ (JabberRPCResponse)
 
 -(NSXMLElement *)methodResponseElement {
-	NSXMLElement *query = [self elementForName:@"query"];
+	NSXMLElement *query = [self elementForName:@"query" xmlns:@"jabber:iq:rpc"];
 	return [query elementForName:@"methodResponse"];
 }
 
 
 -(NSXMLElement *)methodCallElement {
-	NSXMLElement *query = [self elementForName:@"query"];
+	NSXMLElement *query = [self elementForName:@"query" xmlns:@"jabber:iq:rpc"];
 	return [query elementForName:@"methodCall"];
 }
 
 -(id)paramsFromCallElement {
 
     NSXMLElement *methodCall = [self methodCallElement];
-    NIDINFO(@"Method call %@", [methodCall XMLString]);
     NSXMLElement *params = (NSXMLElement *)[methodCall childAtIndex:1];
-    NIDINFO(@"Method params %@", [params XMLString]);
     id call = [self objectFromElement: params];
     return call;
 }

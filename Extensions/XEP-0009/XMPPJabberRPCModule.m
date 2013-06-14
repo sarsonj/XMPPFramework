@@ -87,6 +87,7 @@ NSString *const XMPPJabberRPCErrorDomain = @"XMPPJabberRPCErrorDomain";
 		#if NEEDS_DISPATCH_RETAIN_RELEASE
 		dispatch_retain(timer);
 		#endif
+        timer = NULL;
 	}
 	return self;
 }
@@ -103,10 +104,14 @@ NSString *const XMPPJabberRPCErrorDomain = @"XMPPJabberRPCErrorDomain";
 
 - (void)cancelTimer
 {
+
+
 	if (timer)
 	{
+        NIDINFO(@"Cancel timer %i", timer);
 		dispatch_source_cancel(timer);
 		#if NEEDS_DISPATCH_RETAIN_RELEASE
+        NIDINFO(@"Dispatch release...");
 		dispatch_release(timer);
 		#endif
 		timer = NULL;
@@ -185,7 +190,7 @@ NSString *const XMPPJabberRPCErrorDomain = @"XMPPJabberRPCErrorDomain";
 		XMPPLogTrace();
 		
 		rpcIDs = [[NSMutableDictionary alloc] initWithCapacity:5];
-		defaultTimeout = 5.0;
+		defaultTimeout = 14.0;
 	}
 	return self;
 }
@@ -237,21 +242,28 @@ NSString *const XMPPJabberRPCErrorDomain = @"XMPPJabberRPCErrorDomain";
 	XMPPLogTrace();
 	
 	NSString *elementID = [iq elementID];
-	
+
 	dispatch_source_t timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, moduleQueue);
-	
+
+    NSString __block *blockElementID = elementID;
+    XMPPJabberRPCModule* __block blockModule = self;
 	dispatch_source_set_event_handler(timer, ^{ @autoreleasepool {
 		
-			[self timeoutRemoveRpcID:elementID];
+			[blockModule timeoutRemoveRpcID:blockElementID];
+            blockElementID = nil;
+            blockModule = nil;
 	}});
 	
 	dispatch_time_t tt = dispatch_time(DISPATCH_TIME_NOW, (timeout * NSEC_PER_SEC));
 	
 	dispatch_source_set_timer(timer, tt, DISPATCH_TIME_FOREVER, 0);
 	dispatch_resume(timer);
-	
 	RPCID *rpcID = [[RPCID alloc] initWithRpcID:elementID timer:timer];
-	
+    // memory leak bugfix - the release needs to be called!
+#if NEEDS_DISPATCH_RETAIN_RELEASE
+    dispatch_release(timer);
+#endif
+    timer = NULL;
 	[rpcIDs setObject:rpcID forKey:elementID];
 	
 	[xmppStream sendElement:iq];
@@ -369,9 +381,12 @@ NSString *const XMPPJabberRPCErrorDomain = @"XMPPJabberRPCErrorDomain";
             // Did any of the delegates respond to the IQ?
 
             BOOL responded = (dispatch_semaphore_wait(delSemaphore, DISPATCH_TIME_NOW) == 0);
-            
+#if NEEDS_DISPATCH_RETAIN_RELEASE
             dispatch_release(delSemaphore);
             dispatch_release(delGroup);
+#endif
+            delSemaphore = NULL;
+            delGroup = NULL;
             
             return responded;
 #endif

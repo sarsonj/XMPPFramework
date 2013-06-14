@@ -2,6 +2,7 @@
 #import "XMPPStream.h"
 #import "XMPPLogging.h"
 #import "NSXMLElement+XMPP.h"
+#import "LoginManager.h"
 
 #if ! __has_feature(objc_arc)
 #warning This file must be compiled with ARC. Use -fobjc-arc flag (or convert project to ARC).
@@ -304,6 +305,7 @@ typedef SCNetworkConnectionFlags SCNetworkReachabilityFlags;
 	
 	// We're now connected and properly authenticated.
 	// Should we get accidentally disconnected we should automatically reconnect (if autoReconnect is set).
+    NIDINFO(@"Authencitate - should reconnect YES!");
 	[self setShouldReconnect:YES];
 }
 
@@ -338,6 +340,9 @@ typedef SCNetworkConnectionFlags SCNetworkReachabilityFlags;
 	// This method is executed on our moduleQueue.
 	
 	// We should not automatically attempt to reconnect when the connection closes.
+
+    NIDINFO(@"Told to disconnect");
+
 	[self stop];
 }
 
@@ -347,6 +352,7 @@ typedef SCNetworkConnectionFlags SCNetworkReachabilityFlags;
 	
 	if ([self autoReconnect] && [self shouldReconnect])
 	{
+
 		[self setupReconnectTimer];
 		[self setupNetworkMonitoring];
 		
@@ -394,6 +400,7 @@ static void ReachabilityChanged(SCNetworkReachabilityRef target, SCNetworkReacha
 
 - (void)setupReconnectTimer
 {
+
 	NSAssert(dispatch_get_current_queue() == moduleQueue, @"Invoked on incorrect queue");
 	
 	if (reconnectTimer == NULL)
@@ -617,15 +624,18 @@ static void ReachabilityChanged(SCNetworkReachabilityRef target, SCNetworkReacha
 				}
 				
 				dispatch_async(moduleQueue, ^{ @autoreleasepool {
-					
 					[self setQueryingDelegates:NO];
-					
 					if (shouldAttemptReconnect)
 					{
 						[self setMultipleReachabilityChanges:NO];
 						previousReachabilityFlags = reachabilityFlags;
-						
-						[xmppStream connect:nil];
+						// sarsonj fix - check for actual XMPP server first
+                        [[LoginManager sharedLoginManager] realoadActualXMPPServer:^(NSString *serverXml, int serverPort) {
+                            NIDINFO(@"Server hostname update %@", serverXml);
+                            [xmppStream setHostPort:serverPort];
+                            [xmppStream setHostName:serverXml];
+						    [xmppStream connect:nil];
+                        }];
 					}
 					else if ([self multipleReachabilityChanges])
 					{
@@ -638,15 +648,12 @@ static void ReachabilityChanged(SCNetworkReachabilityRef target, SCNetworkReacha
 					{
 						previousReachabilityFlags = IMPOSSIBLE_REACHABILITY_FLAGS;
 					}
-					
 				}});
-				
 				#if NEEDS_DISPATCH_RETAIN_RELEASE
 				dispatch_release(delSemaphore);
 				dispatch_release(delGroup);
 				#endif
 			}});
-			
 		}
 		else
 		{
@@ -662,7 +669,6 @@ static void ReachabilityChanged(SCNetworkReachabilityRef target, SCNetworkReacha
 				// 
 				// We make a note of the multiple changes,
 				// and if the current attempt fails, we'll try again after a short delay.
-				
 				[self setMultipleReachabilityChanges:YES];
 			}
 		}

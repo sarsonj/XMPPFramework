@@ -45,7 +45,7 @@
 
 // Log levels: off, error, warn, info, verbose
 #if DEBUG
-  static const int xmppLogLevel = XMPP_LOG_LEVEL_INFO | XMPP_LOG_FLAG_SEND_RECV; // | XMPP_LOG_FLAG_TRACE;
+static const int xmppLogLevel = XMPP_LOG_LEVEL_WARN; //XMPP_LOG_LEVEL_INFO | XMPP_LOG_FLAG_SEND_RECV; // | XMPP_LOG_FLAG_TRACE;
 #else
   static const int xmppLogLevel = XMPP_LOG_LEVEL_WARN;
 #endif
@@ -3876,7 +3876,7 @@ enum XMPPStreamConfig
 			[asyncSocket writeData:keepAliveData
 			           withTimeout:TIMEOUT_XMPP_WRITE
 			                   tag:TAG_XMPP_WRITE_STREAM];
-			
+            NIDINFO(@"Keep alive...");
 			// Force update the lastSendReceiveTime here just to be safe.
 			// 
 			// In case the TCP socket comes to a crawl with a giant element in the queue,

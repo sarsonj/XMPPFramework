@@ -143,6 +143,8 @@
 **/
 - (void)stop;
 
+- (void)xmppStreamWasToldToDisconnect:(XMPPStream *)sender;
+
 @end
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -167,6 +169,7 @@
 
 - (void)xmppReconnect:(XMPPReconnect *)sender didDetectAccidentalDisconnect:(SCNetworkReachabilityFlags)connectionFlags;
 - (BOOL)xmppReconnect:(XMPPReconnect *)sender shouldAttemptAutoReconnect:(SCNetworkReachabilityFlags)reachabilityFlags;
+
 
 #endif
 
