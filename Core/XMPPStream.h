@@ -105,6 +105,15 @@ extern const NSTimeInterval XMPPStreamTimeoutNone;
 **/
 @property (readwrite, assign) UInt16 hostPort;
 
+
+/**
+ * Start TLS is used if the server supports it, regardless of wether it is required or not.
+ *
+ * The default is NO
+**/
+@property (readwrite, assign) BOOL autoStartTLS;
+
+
 /**
  * The JID of the user.
  * 
@@ -912,6 +921,13 @@ extern const NSTimeInterval XMPPStreamTimeoutNone;
 - (void)xmppStream:(XMPPStream *)sender didSendIQ:(XMPPIQ *)iq;
 - (void)xmppStream:(XMPPStream *)sender didSendMessage:(XMPPMessage *)message;
 - (void)xmppStream:(XMPPStream *)sender didSendPresence:(XMPPPresence *)presence;
+
+/**
+ * These methods are called after failing to send the respective XML elements over the stream.
+**/
+- (void)xmppStream:(XMPPStream *)sender didFailToSendIQ:(XMPPIQ *)iq error:(NSError *)error;
+- (void)xmppStream:(XMPPStream *)sender didFailToSendMessage:(XMPPMessage *)message error:(NSError *)error;
+- (void)xmppStream:(XMPPStream *)sender didFailToSendPresence:(XMPPPresence *)presence error:(NSError *)error;
 
 /**
  * This method is called if the disconnect method is called.

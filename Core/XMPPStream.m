@@ -109,6 +109,8 @@ enum XMPPStreamConfig
 	
 	NSString *hostName;
 	UInt16 hostPort;
+    
+    BOOL autoStartTLS;
 	
 	id <XMPPSASLAuthentication> auth;
 	NSDate *authenticationDate;
@@ -384,6 +386,35 @@ enum XMPPStreamConfig
 {
 	dispatch_block_t block = ^{
 		hostPort = newHostPort;
+	};
+	
+	if (dispatch_get_specific(xmppQueueTag))
+		block();
+	else
+		dispatch_async(xmppQueue, block);
+}
+
+
+- (BOOL)autoStartTLS
+{
+    __block BOOL result;
+
+    dispatch_block_t block = ^{
+        result = autoStartTLS;
+    };
+
+    if (dispatch_get_specific(xmppQueueTag))
+        block();
+    else
+        dispatch_sync(xmppQueue, block);
+
+    return result;
+}
+
+- (void)setAutoStartTLS:(BOOL)flag
+{
+	dispatch_block_t block = ^{
+		autoStartTLS = flag;
 	};
 	
 	if (dispatch_get_specific(xmppQueueTag))
@@ -2450,6 +2481,14 @@ enum XMPPStreamConfig
 		{
 			[self sendElement:element withTag:TAG_XMPP_WRITE_STREAM];
 		}
+		else
+		{
+			NSError *error = [NSError errorWithDomain:XMPPStreamErrorDomain
+												 code:XMPPStreamInvalidState
+											 userInfo:nil];
+            
+			[self failToSendElement:element error:error];
+		}
 	}};
 	
 	if (dispatch_get_specific(xmppQueueTag))
@@ -2486,6 +2525,14 @@ enum XMPPStreamConfig
 				
 				[self sendElement:element withTag:TAG_XMPP_WRITE_RECEIPT];
 			}
+            else
+            {
+                NSError *error = [NSError errorWithDomain:XMPPStreamErrorDomain
+                                                     code:XMPPStreamInvalidState
+                                                 userInfo:nil];
+                
+                [self failToSendElement:element error:error];
+            }
 		}};
 		
 		if (dispatch_get_specific(xmppQueueTag))
@@ -2495,6 +2542,62 @@ enum XMPPStreamConfig
 		
 		*receiptPtr = receipt;
 	}
+}
+
+- (void)failToSendElement:(NSXMLElement *)element error:(NSError *)error
+{
+	NSAssert(dispatch_get_specific(xmppQueueTag), @"Invoked on incorrect queue");
+	
+	if ([element isKindOfClass:[XMPPIQ class]])
+	{
+		[self failToSendIQ:(XMPPIQ *)element error:error];
+	}
+	else if ([element isKindOfClass:[XMPPMessage class]])
+	{
+		[self failToSendMessage:(XMPPMessage *)element error:error];
+	}
+	else if ([element isKindOfClass:[XMPPPresence class]])
+	{
+		[self failToSendPresence:(XMPPPresence *)element error:error];
+	}
+	else
+	{
+		NSString *elementName = [element name];
+		
+		if ([elementName isEqualToString:@"iq"])
+		{
+			[self failToSendIQ:[XMPPIQ iqFromElement:element] error:error];
+		}
+		else if ([elementName isEqualToString:@"message"])
+		{
+			[self failToSendMessage:[XMPPMessage messageFromElement:element] error:error];
+		}
+		else if ([elementName isEqualToString:@"presence"])
+		{
+			[self failToSendPresence:[XMPPPresence presenceFromElement:element] error:error];
+		}
+	}
+}
+
+- (void)failToSendIQ:(XMPPIQ *)iq error:(NSError *)error
+{
+	NSAssert(dispatch_get_specific(xmppQueueTag), @"Invoked on incorrect queue");
+	
+	[multicastDelegate xmppStream:self didFailToSendIQ:iq error:error];
+}
+
+- (void)failToSendMessage:(XMPPMessage *)message error:(NSError *)error
+{
+	NSAssert(dispatch_get_specific(xmppQueueTag), @"Invoked on incorrect queue");
+	
+	[multicastDelegate xmppStream:self didFailToSendMessage:message error:error];
+}
+
+- (void)failToSendPresence:(XMPPPresence *)presence error:(NSError *)error
+{
+	NSAssert(dispatch_get_specific(xmppQueueTag), @"Invoked on incorrect queue");
+	
+	[multicastDelegate xmppStream:self didFailToSendPresence:presence error:error];
 }
 
 /**
@@ -3130,7 +3233,7 @@ enum XMPPStreamConfig
 	
 	if (f_starttls)
 	{
-		if ([f_starttls elementForName:@"required"])
+		if ([f_starttls elementForName:@"required"] || [self autoStartTLS])
 		{
 			// TLS is required for this connection
 			
@@ -3379,6 +3482,7 @@ enum XMPPStreamConfig
 			
 			NSXMLElement *iq = [NSXMLElement elementWithName:@"iq"];
 			[iq addAttributeWithName:@"type" stringValue:@"set"];
+            [iq addAttributeWithName:@"id" stringValue:[self generateUUID]];
 			[iq addChild:session];
 			
 			NSString *outgoingStr = [iq compactXMLString];

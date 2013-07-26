@@ -142,15 +142,32 @@
 	return self;
 }
 
+- (id)copyWithZone:(NSZone *)zone
+{
+    NSXMLElement *element = [super copyWithZone:zone];
+    return [XMPPMessage messageFromElement:element];
+}
+
 - (NSString *)body
 {
 	return [[self elementForName:@"body"] stringValue];
+}
+
+- (NSString *)thread
+{
+	return [[self elementForName:@"thread"] stringValue];
 }
 
 - (void)addBody:(NSString *)body
 {
     NSXMLElement *bodyElement = [NSXMLElement elementWithName:@"body" stringValue:body];
     [self addChild:bodyElement];
+}
+
+- (void)addThread:(NSString *)thread
+{
+    NSXMLElement *threadElement = [NSXMLElement elementWithName:@"thread" stringValue:thread];
+    [self addChild:threadElement];
 }
 
 - (BOOL)isChatMessage
@@ -168,11 +185,13 @@
 	return NO;
 }
 
-- (BOOL)isErrorMessage {
+- (BOOL)isErrorMessage
+{
     return [[[self attributeForName:@"type"] stringValue] isEqualToString:@"error"];
 }
 
-- (NSError *)errorMessage {
+- (NSError *)errorMessage
+{
     if (![self isErrorMessage]) {
         return nil;
     }

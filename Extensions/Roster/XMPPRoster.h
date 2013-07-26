@@ -351,7 +351,12 @@
 - (void)xmppRoster:(XMPPRoster *)sender didReceivePresenceSubscriptionRequest:(XMPPPresence *)presence;
 
 /**
- * Sent when the initial roster is recieved.
+ * Sent when a Roster Push is received as specified in Section 2.1.6 of RFC 6121.
+**/
+- (void)xmppRoster:(XMPPRoster *)sender didReceiveRosterPush:(XMPPIQ *)iq;
+
+/**
+ * Sent when the initial roster is received.
 **/
 - (void)xmppRosterDidBeginPopulating:(XMPPRoster *)sender;
 
