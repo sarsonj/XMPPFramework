@@ -189,8 +189,11 @@
 	UInt16 *pResult = (UInt16 *)([data bytes] + offset);
 	UInt16 result = *pResult;
 	
-	if(flag)
-		return ntohs(result);
+	if(flag) {
+        NSAssert(NO, @"ntohs not implemented!");
+//        return ntohs(result);
+        return result;
+    }
 	else
 		return result;
 }
@@ -204,8 +207,12 @@
 	UInt32 *pResult = (UInt32 *)([data bytes] + offset);
 	UInt32 result = *pResult;
 	
-	if(flag)
-		return ntohl(result);
+	if(flag) {
+        NSAssert(NO, @"ntohl not implemented!");
+        return result;
+//        return ntohl(result);
+    }
+
 	else
 		return result;
 }

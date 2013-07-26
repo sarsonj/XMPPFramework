@@ -17,7 +17,12 @@
 @class GCDAsyncWritePacket;
 @class GCDAsyncSocketPreBuffer;
 
-#if TARGET_OS_IPHONE
+#ifdef ANDROID
+    #define IS_SECURE_TRANSPORT_AVAILABLE      NO
+    #define SECURE_TRANSPORT_MAYBE_AVAILABLE   0
+    #define SECURE_TRANSPORT_MAYBE_UNAVAILABLE 1
+
+#elif TARGET_OS_IPHONE
 
   // Compiling for iOS
 

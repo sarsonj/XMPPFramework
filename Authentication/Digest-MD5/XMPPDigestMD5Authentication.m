@@ -232,9 +232,11 @@
 			NSMutableString *key = [[component substringToIndex:separator.location] mutableCopy];
 			NSMutableString *value = [[component substringFromIndex:separator.location+1] mutableCopy];
 			
+/*
 			if(key) CFStringTrimWhitespace((__bridge CFMutableStringRef)key);
 			if(value) CFStringTrimWhitespace((__bridge CFMutableStringRef)value);
-			
+*/
+
 			if ([value hasPrefix:@"\""] && [value hasSuffix:@"\""] && [value length] > 2)
 			{
 				// Strip quotes from value

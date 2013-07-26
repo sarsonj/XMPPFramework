@@ -3,7 +3,6 @@
 #import "XMPPParser.h"
 #import "XMPPLogging.h"
 #import "XMPPInternal.h"
-#import "XMPPSRVResolver.h"
 #import "NSData+XMPP.h"
 
 #import <objc/runtime.h>
@@ -967,7 +966,6 @@ enum XMPPStreamConfig
 
         if (state == STATE_XMPP_RESOLVING_SRV)
         {
-            [srvResolver stop];
             srvResolver = nil;
             
             state = STATE_XMPP_DISCONNECTED;
@@ -1069,20 +1067,21 @@ enum XMPPStreamConfig
 
 		if ([hostName length] == 0)
 		{
-			// Resolve the hostName via myJID SRV resolution
-			
-			state = STATE_XMPP_RESOLVING_SRV;
-			
-			srvResolver = [[XMPPSRVResolver alloc] initWithdDelegate:self delegateQueue:xmppQueue resolverQueue:NULL];
-			
-			srvResults = nil;
-			srvResultsIndex = 0;
-			
-			NSString *srvName = [XMPPSRVResolver srvNameFromXMPPDomain:[myJID_setByClient domain]];
-			
-			[srvResolver startWithSRVName:srvName timeout:TIMEOUT_SRV_RESOLUTION];
-			
-			result = YES;
+            NSAssert(NO, @"Resolver is disabled");
+//			// Resolve the hostName via myJID SRV resolution
+//			
+//			state = STATE_XMPP_RESOLVING_SRV;
+//			
+//			srvResolver = [[XMPPSRVResolver alloc] initWithdDelegate:self delegateQueue:xmppQueue resolverQueue:NULL];
+//			
+//			srvResults = nil;
+//			srvResultsIndex = 0;
+//			
+//			NSString *srvName = [XMPPSRVResolver srvNameFromXMPPDomain:[myJID_setByClient domain]];
+//			
+//			[srvResolver startWithSRVName:srvName timeout:TIMEOUT_SRV_RESOLUTION];
+//			
+//			result = YES;
 		}
 		else
 		{
@@ -1349,7 +1348,6 @@ enum XMPPStreamConfig
 			
 			if (state == STATE_XMPP_RESOLVING_SRV)
 			{
-				[srvResolver stop];
 				srvResolver = nil;
 				
 				state = STATE_XMPP_DISCONNECTED;
@@ -1401,7 +1399,6 @@ enum XMPPStreamConfig
 			
 			if (state == STATE_XMPP_RESOLVING_SRV)
 			{
-				[srvResolver stop];
 				srvResolver = nil;
 				
 				state = STATE_XMPP_DISCONNECTED;
@@ -3187,7 +3184,7 @@ enum XMPPStreamConfig
 			
 			if ([expectedCertName length] > 0)
 			{
-				[settings setObject:expectedCertName forKey:(NSString *)kCFStreamSSLPeerName];
+				[settings setObject:expectedCertName forKey:(__bridge NSString *)kCFStreamSSLPeerName];
 			}
 		}
 		
@@ -3657,49 +3654,51 @@ enum XMPPStreamConfig
 	NSAssert(dispatch_get_specific(xmppQueueTag), @"Invoked on incorrect queue");
 	
 	XMPPLogTrace();
-	
-	NSError *connectError = nil;
-	BOOL success = NO;
-	
-	while (srvResultsIndex < [srvResults count])
-	{
-		XMPPSRVRecord *srvRecord = [srvResults objectAtIndex:srvResultsIndex];
-		NSString *srvHost = srvRecord.target;
-		UInt16 srvPort    = srvRecord.port;
-		
-		success = [self connectToHost:srvHost onPort:srvPort withTimeout:XMPPStreamTimeoutNone error:&connectError];
-		
-		if (success)
-		{
-			break;
-		}
-		else
-		{
-			srvResultsIndex++;
-		}
-	}
-	
-	if (!success)
-	{
-		// SRV resolution of the JID domain failed.
-		// As per the RFC:
-		// 
-		// "If the SRV lookup fails, the fallback is a normal IPv4/IPv6 address record resolution
-		// to determine the IP address, using the "xmpp-client" port 5222, registered with the IANA."
-		// 
-		// In other words, just try connecting to the domain specified in the JID.
-		
-		success = [self connectToHost:[myJID_setByClient domain] onPort:5222 withTimeout:XMPPStreamTimeoutNone error:&connectError];
-	}
-	
-	if (!success)
-	{
-		[self endConnectTimeout];
-		
-		state = STATE_XMPP_DISCONNECTED;
-		
-		[multicastDelegate xmppStreamDidDisconnect:self withError:connectError];
-	}
+    
+    NSAssert(NO, @"Resolver disabled");
+//	
+//	NSError *connectError = nil;
+//	BOOL success = NO;
+//	
+//	while (srvResultsIndex < [srvResults count])
+//	{
+//		XMPPSRVRecord *srvRecord = [srvResults objectAtIndex:srvResultsIndex];
+//		NSString *srvHost = srvRecord.target;
+//		UInt16 srvPort    = srvRecord.port;
+//		
+//		success = [self connectToHost:srvHost onPort:srvPort withTimeout:XMPPStreamTimeoutNone error:&connectError];
+//		
+//		if (success)
+//		{
+//			break;
+//		}
+//		else
+//		{
+//			srvResultsIndex++;
+//		}
+//	}
+//	
+//	if (!success)
+//	{
+//		// SRV resolution of the JID domain failed.
+//		// As per the RFC:
+//		// 
+//		// "If the SRV lookup fails, the fallback is a normal IPv4/IPv6 address record resolution
+//		// to determine the IP address, using the "xmpp-client" port 5222, registered with the IANA."
+//		// 
+//		// In other words, just try connecting to the domain specified in the JID.
+//		
+//		success = [self connectToHost:[myJID_setByClient domain] onPort:5222 withTimeout:XMPPStreamTimeoutNone error:&connectError];
+//	}
+//	
+//	if (!success)
+//	{
+//		[self endConnectTimeout];
+//		
+//		state = STATE_XMPP_DISCONNECTED;
+//		
+//		[multicastDelegate xmppStreamDidDisconnect:self withError:connectError];
+//	}
 }
 
 - (void)srvResolver:(XMPPSRVResolver *)sender didResolveRecords:(NSArray *)records

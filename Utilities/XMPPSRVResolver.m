@@ -8,7 +8,6 @@
 #import "XMPPSRVResolver.h"
 #import "XMPPLogging.h"
 
-#include <dns_util.h>
 #include <stdlib.h>
 
 #if ! __has_feature(objc_arc)

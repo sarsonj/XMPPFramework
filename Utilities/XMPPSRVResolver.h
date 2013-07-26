@@ -6,7 +6,6 @@
 //  
 
 #import <Foundation/Foundation.h>
-#import <dns_sd.h>
 
 extern NSString *const XMPPSRVResolverErrorDomain;
 
@@ -25,8 +24,7 @@ extern NSString *const XMPPSRVResolverErrorDomain;
     BOOL resolveInProgress;
 	
     NSMutableArray *results;
-    DNSServiceRef sdRef;
-	
+
 	int sdFd;
 	dispatch_source_t sdReadSource;
 	dispatch_source_t timeoutTimer;

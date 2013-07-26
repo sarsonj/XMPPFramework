@@ -2160,7 +2160,7 @@ enum GCDAsyncSocketConfig
 		memset(&(nativeAddr.sin_zero), 0, sizeof(nativeAddr.sin_zero));
 		
 		struct sockaddr_in6 nativeAddr6;
-		nativeAddr6.sin6_len       = sizeof(struct sockaddr_in6);
+//		nativeAddr6.sin6_len       = sizeof(struct sockaddr_in6);
 		nativeAddr6.sin6_family    = AF_INET6;
 		nativeAddr6.sin6_port      = htons(port);
 		nativeAddr6.sin6_flowinfo  = 0;
@@ -3492,7 +3492,7 @@ enum GCDAsyncSocketConfig
 		struct sockaddr_in6 sockaddr6;
 		memset(&sockaddr6, 0, sizeof(sockaddr6));
 		
-		sockaddr6.sin6_len       = sizeof(sockaddr6);
+//		sockaddr6.sin6_len       = sizeof(sockaddr6);
 		sockaddr6.sin6_family    = AF_INET6;
 		sockaddr6.sin6_port      = htons(port);
 		sockaddr6.sin6_addr      = in6addr_any;
@@ -3515,7 +3515,7 @@ enum GCDAsyncSocketConfig
 		struct sockaddr_in6 sockaddr6;
 		memset(&sockaddr6, 0, sizeof(sockaddr6));
 		
-		sockaddr6.sin6_len       = sizeof(sockaddr6);
+//		sockaddr6.sin6_len       = sizeof(sockaddr6);
 		sockaddr6.sin6_family    = AF_INET6;
 		sockaddr6.sin6_port      = htons(port);
 		sockaddr6.sin6_addr      = in6addr_loopback;
@@ -5842,19 +5842,19 @@ enum GCDAsyncSocketConfig
                 
                 NSNumber *value = nil;
                 
-                value = [tlsSettings objectForKey:(NSString *)kCFStreamSSLAllowsAnyRoot];
+                value = [tlsSettings objectForKey:(__bridge NSString *)kCFStreamSSLAllowsAnyRoot];
                 if (value && [value boolValue] == YES)
                     canUseSecureTransport = NO;
                 
-                value = [tlsSettings objectForKey:(NSString *)kCFStreamSSLAllowsExpiredRoots];
+                value = [tlsSettings objectForKey:(__bridge NSString *)kCFStreamSSLAllowsExpiredRoots];
                 if (value && [value boolValue] == YES)
                     canUseSecureTransport = NO;
                 
-                value = [tlsSettings objectForKey:(NSString *)kCFStreamSSLValidatesCertificateChain];
+                value = [tlsSettings objectForKey:(__bridge NSString *)kCFStreamSSLValidatesCertificateChain];
                 if (value && [value boolValue] == NO)
                     canUseSecureTransport = NO;
                 
-                value = [tlsSettings objectForKey:(NSString *)kCFStreamSSLAllowsExpiredCertificates];
+                value = [tlsSettings objectForKey:(__bridge NSString *)kCFStreamSSLAllowsExpiredCertificates];
                 if (value && [value boolValue] == YES)
                     canUseSecureTransport = NO;
             }
@@ -6132,7 +6132,7 @@ static OSStatus SSLWriteFunction(SSLConnectionRef connection, const void *data, 
 	
 	// Create SSLContext, and setup IO callbacks and connection ref
 	
-	BOOL isServer = [[tlsSettings objectForKey:(NSString *)kCFStreamSSLIsServer] boolValue];
+	BOOL isServer = [[tlsSettings objectForKey:(__bridge NSString *)kCFStreamSSLIsServer] boolValue];
 	
 	#if TARGET_OS_IPHONE
 	{
@@ -6189,7 +6189,7 @@ static OSStatus SSLWriteFunction(SSLConnectionRef connection, const void *data, 
 	
 	// 1. kCFStreamSSLPeerName
 	
-	value = [tlsSettings objectForKey:(NSString *)kCFStreamSSLPeerName];
+	value = [tlsSettings objectForKey:(__bridge NSString *)kCFStreamSSLPeerName];
 	if ([value isKindOfClass:[NSString class]])
 	{
 		NSString *peerName = (NSString *)value;
@@ -6207,7 +6207,7 @@ static OSStatus SSLWriteFunction(SSLConnectionRef connection, const void *data, 
 	
 	// 2. kCFStreamSSLAllowsAnyRoot
 	
-	value = [tlsSettings objectForKey:(NSString *)kCFStreamSSLAllowsAnyRoot];
+	value = [tlsSettings objectForKey:(__bridge NSString *)kCFStreamSSLAllowsAnyRoot];
 	if (value)
 	{
 		#if TARGET_OS_IPHONE
@@ -6228,7 +6228,7 @@ static OSStatus SSLWriteFunction(SSLConnectionRef connection, const void *data, 
 	
 	// 3. kCFStreamSSLAllowsExpiredRoots
 	
-	value = [tlsSettings objectForKey:(NSString *)kCFStreamSSLAllowsExpiredRoots];
+	value = [tlsSettings objectForKey:(__bridge NSString *)kCFStreamSSLAllowsExpiredRoots];
 	if (value)
 	{
 		#if TARGET_OS_IPHONE
@@ -6249,7 +6249,7 @@ static OSStatus SSLWriteFunction(SSLConnectionRef connection, const void *data, 
 	
 	// 4. kCFStreamSSLValidatesCertificateChain
 	
-	value = [tlsSettings objectForKey:(NSString *)kCFStreamSSLValidatesCertificateChain];
+	value = [tlsSettings objectForKey:(__bridge NSString *)kCFStreamSSLValidatesCertificateChain];
 	if (value)
 	{
 		#if TARGET_OS_IPHONE
@@ -6270,7 +6270,7 @@ static OSStatus SSLWriteFunction(SSLConnectionRef connection, const void *data, 
 	
 	// 5. kCFStreamSSLAllowsExpiredCertificates
 	
-	value = [tlsSettings objectForKey:(NSString *)kCFStreamSSLAllowsExpiredCertificates];
+	value = [tlsSettings objectForKey:(__bridge NSString *)kCFStreamSSLAllowsExpiredCertificates];
 	if (value)
 	{
 		#if TARGET_OS_IPHONE
@@ -6291,7 +6291,7 @@ static OSStatus SSLWriteFunction(SSLConnectionRef connection, const void *data, 
 	
 	// 6. kCFStreamSSLCertificates
 	
-	value = [tlsSettings objectForKey:(NSString *)kCFStreamSSLCertificates];
+	value = [tlsSettings objectForKey:(__bridge NSString *)kCFStreamSSLCertificates];
 	if (value)
 	{
 		CFArrayRef certs = (__bridge CFArrayRef)value;
@@ -6308,7 +6308,7 @@ static OSStatus SSLWriteFunction(SSLConnectionRef connection, const void *data, 
 	
 	#if TARGET_OS_IPHONE
 	{
-		NSString *sslLevel = [tlsSettings objectForKey:(NSString *)kCFStreamSSLLevel];
+		NSString *sslLevel = [tlsSettings objectForKey:(__bridge NSString *)kCFStreamSSLLevel];
 		
 		NSString *sslMinLevel = [tlsSettings objectForKey:GCDAsyncSocketSSLProtocolVersionMin];
 		NSString *sslMaxLevel = [tlsSettings objectForKey:GCDAsyncSocketSSLProtocolVersionMax];
@@ -6322,11 +6322,11 @@ static OSStatus SSLWriteFunction(SSLConnectionRef connection, const void *data, 
 			}
 			else
 			{
-				if ([sslLevel isEqualToString:(NSString *)kCFStreamSocketSecurityLevelSSLv3])
+				if ([sslLevel isEqualToString:(__bridge NSString *)kCFStreamSocketSecurityLevelSSLv3])
 				{
 					sslMinLevel = sslMaxLevel = @"kSSLProtocol3";
 				}
-				else if ([sslLevel isEqualToString:(NSString *)kCFStreamSocketSecurityLevelTLSv1])
+				else if ([sslLevel isEqualToString:(__bridge NSString *)kCFStreamSocketSecurityLevelTLSv1])
 				{
 					sslMinLevel = sslMaxLevel = @"kTLSProtocol1";
 				}
