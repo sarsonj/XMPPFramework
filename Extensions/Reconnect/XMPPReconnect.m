@@ -4,6 +4,8 @@
 #import "NSXMLElement+XMPP.h"
 #import "LoginManager.h"
 
+//#import "Reachability.h"
+
 #if ! __has_feature(objc_arc)
 #warning This file must be compiled with ARC. Use -fobjc-arc flag (or convert project to ARC).
 #endif
@@ -197,6 +199,12 @@ typedef SCNetworkConnectionFlags SCNetworkReachabilityFlags;
 	else
 		flags &= ~kQueryingDelegates;
 }
+
+/*
+-(BOOL)networkUp {
+    return
+}
+*/
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma mark Manual Manipulation
@@ -530,10 +538,11 @@ static void XMPPReconnectReachabilityCallback(SCNetworkReachabilityRef target, S
 
 - (void)maybeAttemptReconnectWithReachabilityFlags:(SCNetworkReachabilityFlags)reachabilityFlags
 {
+    NIDINFO(@"Reachability flags: %i", reachabilityFlags);
+
 	if (!dispatch_get_specific(moduleQueueTag))
 	{
 		dispatch_async(moduleQueue, ^{ @autoreleasepool {
-			
 			[self maybeAttemptReconnectWithReachabilityFlags:reachabilityFlags];
 			
 		}});
@@ -601,15 +610,12 @@ static void XMPPReconnectReachabilityCallback(SCNetworkReachabilityRef target, S
 					{
 						[self setMultipleReachabilityChanges:NO];
 						previousReachabilityFlags = reachabilityFlags;
-<<<<<<< HEAD
 						// sarsonj fix - check for actual XMPP server first
                         [[LoginManager sharedLoginManager] realoadActualXMPPServer:^(NSString *serverXml, int serverPort) {
                             NIDINFO(@"Server hostname update %@", serverXml);
                             [xmppStream setHostPort:serverPort];
                             [xmppStream setHostName:serverXml];
-						    [xmppStream connect:nil];
                         }];
-=======
 						
                         if (self.usesOldSchoolSecureConnect)
                         {
@@ -619,7 +625,6 @@ static void XMPPReconnectReachabilityCallback(SCNetworkReachabilityRef target, S
                         {
                             [xmppStream connectWithTimeout:XMPPStreamTimeoutNone error:nil];
                         }
->>>>>>> 479fc36e23d8b0357b86a0918bc3a19964349cc4
 					}
 					else if ([self multipleReachabilityChanges])
 					{
@@ -633,12 +638,7 @@ static void XMPPReconnectReachabilityCallback(SCNetworkReachabilityRef target, S
 						previousReachabilityFlags = IMPOSSIBLE_REACHABILITY_FLAGS;
 					}
 				}});
-<<<<<<< HEAD
-				#if NEEDS_DISPATCH_RETAIN_RELEASE
-=======
-				
 				#if !OS_OBJECT_USE_OBJC
->>>>>>> 479fc36e23d8b0357b86a0918bc3a19964349cc4
 				dispatch_release(delSemaphore);
 				dispatch_release(delGroup);
 				#endif

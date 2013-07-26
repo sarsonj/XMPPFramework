@@ -1,4 +1,5 @@
 #import "XMPP.h"
+#import "XMPP.h"
 #import "XMPPParser.h"
 #import "XMPPLogging.h"
 #import "XMPPInternal.h"
@@ -19,9 +20,11 @@
 
 // Log levels: off, error, warn, info, verbose
 #if DEBUG
-static const int xmppLogLevel = XMPP_LOG_LEVEL_WARN; //XMPP_LOG_LEVEL_INFO | XMPP_LOG_FLAG_SEND_RECV; // | XMPP_LOG_FLAG_TRACE;
+//static const int xmppLogLevel = XMPP_LOG_LEVEL_WARN; //XMPP_LOG_LEVEL_INFO | XMPP_LOG_FLAG_SEND_RECV; // | XMPP_LOG_FLAG_TRACE;
+static const int xmppLogLevel =  XMPP_LOG_FLAG_SEND_RECV; //XMPP_LOG_LEVEL_INFO | XMPP_LOG_FLAG_SEND_RECV; // | XMPP_LOG_FLAG_TRACE;
 #else
   static const int xmppLogLevel = XMPP_LOG_LEVEL_WARN;
+//  static const int xmppLogLevel = XMPP_LOG_FLAG_SEND_RECV;
 #endif
 
 /**
@@ -233,6 +236,7 @@ enum XMPPStreamConfig
 		
 		// Initialize socket
 		asyncSocket = [[GCDAsyncSocket alloc] initWithDelegate:self delegateQueue:xmppQueue];
+//        [asyncSocket setTCPNoDelayEnabled:YES];
 	}
 	return self;
 }
@@ -1177,8 +1181,9 @@ enum XMPPStreamConfig
 		
 		// Initailize socket
 		asyncSocket = [[GCDAsyncSocket alloc] initWithDelegate:self delegateQueue:xmppQueue];
-		
-		NSError *connectErr = nil;
+//        [asyncSocket setTCPNoDelayEnabled:YES];
+
+            NSError *connectErr = nil;
 		result = [asyncSocket connectToAddress:remoteAddr error:&connectErr];
 		
 		if (result == NO)

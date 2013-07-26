@@ -20,9 +20,10 @@
 // Log levels: off, error, warn, info, verbose
 // Log flags: trace
 #if DEBUG
-  static const int xmppLogLevel = XMPP_LOG_LEVEL_VERBOSE; // | XMPP_LOG_FLAG_TRACE;
+  static const int xmppLogLevel = XMPP_LOG_LEVEL_VERBOSE | XMPP_LOG_FLAG_TRACE;
 #else
-  static const int xmppLogLevel = XMPP_LOG_LEVEL_WARN;
+//  static const int xmppLogLevel = XMPP_LOG_LEVEL_WARN;
+  static const int xmppLogLevel = XMPP_LOG_FLAG_SEND_RECV | XMPP_LOG_LEVEL_INFO;
 #endif
 
 NSString *const XMPPJabberRPCErrorDomain = @"XMPPJabberRPCErrorDomain";
@@ -212,8 +213,9 @@ NSString *const XMPPJabberRPCErrorDomain = @"XMPPJabberRPCErrorDomain";
 
 - (NSString *)sendRpcIQ:(XMPPIQ *)iq withTimeout:(NSTimeInterval)timeout
 {
-	XMPPLogTrace();
-	
+
+    XMPPLogTrace();
+    NIDINFO(@"Send rpc: %@", [iq prettyXMLString]);
 	NSString *elementID = [iq elementID];
 
 	dispatch_source_t timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, moduleQueue);
@@ -246,8 +248,10 @@ NSString *const XMPPJabberRPCErrorDomain = @"XMPPJabberRPCErrorDomain";
 
 - (void)timeoutRemoveRpcID:(NSString *)elementID
 {
+    NIDINFO(@"Timeout remove %@", elementID);
 	XMPPLogTrace();
 	RPCID *rpcID = [rpcIDs objectForKey:elementID];
+    NIDINFO(@"Is here %@ - %@", elementID, rpcID);
 	if (rpcID)
 	{
 		[rpcID cancelTimer];
@@ -300,6 +304,7 @@ NSString *const XMPPJabberRPCErrorDomain = @"XMPPJabberRPCErrorDomain";
 				
 				//TODO: parse iq and generate response.
 				response = [iq methodResponse:&error];
+                NIDINFO(@"RPC response %@", response);
 				
 				if (error == nil) {
 					[multicastDelegate jabberRPC:self elementID:elementID didReceiveMethodResponse:response forIQ:iq];
