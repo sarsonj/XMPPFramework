@@ -51,12 +51,12 @@
 
 static XMPPRoomHybridStorage *sharedInstance;
 
-+ (XMPPRoomHybridStorage *)sharedInstance
++ (instancetype)sharedInstance
 {
 	static dispatch_once_t onceToken;
 	dispatch_once(&onceToken, ^{
 		
-		sharedInstance = [[XMPPRoomHybridStorage alloc] initWithDatabaseFilename:nil];
+		sharedInstance = [[XMPPRoomHybridStorage alloc] initWithDatabaseFilename:nil storeOptions:nil];
 	});
 	
 	return sharedInstance;

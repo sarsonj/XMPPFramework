@@ -14,6 +14,7 @@
 @class XMPPMessage;
 @class XMPPPresence;
 @class XMPPModule;
+@class XMPPElement;
 @class XMPPElementReceipt;
 @protocol XMPPStreamDelegate;
 
@@ -27,15 +28,19 @@
 
 extern NSString *const XMPPStreamErrorDomain;
 
-enum XMPPStreamErrorCode
-{
+typedef NS_ENUM(NSUInteger, XMPPStreamErrorCode) {
 	XMPPStreamInvalidType,       // Attempting to access P2P methods in a non-P2P stream, or vice-versa
 	XMPPStreamInvalidState,      // Invalid state for requested action, such as connect when already connected
 	XMPPStreamInvalidProperty,   // Missing a required property, such as myJID
 	XMPPStreamInvalidParameter,  // Invalid parameter, such as a nil JID
 	XMPPStreamUnsupportedAction, // The server doesn't support the requested action
 };
-typedef enum XMPPStreamErrorCode XMPPStreamErrorCode;
+
+typedef NS_ENUM(NSUInteger, XMPPStreamStartTLSPolicy) {
+    XMPPStreamStartTLSPolicyAllowed,   // TLS will be used if the server requires it
+    XMPPStreamStartTLSPolicyPreferred, // TLS will be used if the server offers it
+    XMPPStreamStartTLSPolicyRequired   // TLS will be used if the server offers it, else the stream won't connect
+};
 
 extern const NSTimeInterval XMPPStreamTimeoutNone;
 
@@ -105,14 +110,14 @@ extern const NSTimeInterval XMPPStreamTimeoutNone;
 **/
 @property (readwrite, assign) UInt16 hostPort;
 
-
 /**
- * Start TLS is used if the server supports it, regardless of wether it is required or not.
+ * The stream's policy on when to Start TLS.
  *
- * The default is NO
+ * The default is XMPPStreamStartTLSPolicyAllowed.
+ *
+ * @see XMPPStreamStartTLSPolicy
 **/
-@property (readwrite, assign) BOOL autoStartTLS;
-
+@property (readwrite, assign) XMPPStreamStartTLSPolicy startTLSPolicy;
 
 /**
  * The JID of the user.
@@ -222,6 +227,33 @@ extern const NSTimeInterval XMPPStreamTimeoutNone;
  * Tag values are not used internally, and should not be used by xmpp modules.
 **/
 @property (readwrite, strong) id tag;
+
+/**
+ * RFC 6121 states that starting a session is no longer required.
+ * To skip this step set skipStartSession to YES.
+ *
+ * [RFC3921] specified one additional
+ * precondition: formal establishment of an instant messaging and
+ * presence session.  Implementation and deployment experience has
+ * shown that this additional step is unnecessary.  However, for
+ * backward compatibility an implementation MAY still offer that
+ * feature.  This enables older software to connect while letting
+ * newer software save a round trip.
+ *
+ * The default value is NO.
+**/
+@property (readwrite, assign) BOOL skipStartSession;
+
+/**
+ * Validates that a response element is FROM the jid that the request element was sent TO.
+ * Supports validating responses when request didn't specify a TO.
+ *
+ * @see isValidResponseElementFrom:forRequestElementTo:
+ * @see isValidResponseElement:forRequestElement:
+ *
+ * The default value is NO.
+**/
+@property (readwrite, assign) BOOL validatesResponses;
 
 #if TARGET_OS_IPHONE
 
@@ -377,7 +409,7 @@ extern const NSTimeInterval XMPPStreamTimeoutNone;
  * In Band Registration.
  * Creating a user account on the xmpp server within the xmpp protocol.
  * 
- * The registerWithPassword:error: method is asynchronous.
+ * The registerWithElements:error: method is asynchronous.
  * It will return immediately, and the delegate methods are used to determine success.
  * See the xmppStreamDidRegister: and xmppStream:didNotRegister: methods.
  * 
@@ -386,10 +418,13 @@ extern const NSTimeInterval XMPPStreamTimeoutNone;
  * 
  * The errPtr parameter is optional - you may pass nil.
  * 
+ * registerWithPassword:error: is a convience method for creating an account using the given username and password.
+ *
  * Security Note:
  * The password will be sent in the clear unless the stream has been secured.
 **/
 - (BOOL)supportsInBandRegistration;
+- (BOOL)registerWithElements:(NSArray *)elements error:(NSError **)errPtr;
 - (BOOL)registerWithPassword:(NSString *)password error:(NSError **)errPtr;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -589,6 +624,18 @@ extern const NSTimeInterval XMPPStreamTimeoutNone;
 - (void)resendMyPresence;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#pragma mark Stanza Validation
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Validates that a response element is FROM the jid that the request element was sent TO.
+ * Supports validating responses when request didn't specify a TO.
+**/
+- (BOOL)isValidResponseElementFrom:(XMPPJID *)from forRequestElementTo:(XMPPJID *)to;
+
+- (BOOL)isValidResponseElement:(XMPPElement *)response forRequestElement:(XMPPElement *)request;
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma mark Module Plug-In System
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -667,27 +714,6 @@ extern const NSTimeInterval XMPPStreamTimeoutNone;
 + (NSString *)generateUUID;
 - (NSString *)generateUUID;
 
-/**
- * The XMPP Framework is designed to be entirely GCD based.
- * However, there are various utility classes provided by Apple that are still dependent upon a thread/runloop model.
- * For example, monitoring a network for changes related to connectivity requires we register a runloop-based delegate.
- * Thus XMPPStream creates a dedicated thread/runloop for any xmpp classes that may need it.
- * This provides multiple benefits:
- * 
- * - Development is simplified for those transitioning from previous thread/runloop versions.
- * - Development is simplified for those who rely on utility classes that don't yet support pure GCD,
- *   as they don't have to setup and maintain a thread/runloop on their own.
- * - It prevents multiple xmpp classes from creating multiple internal threads (which would be resource costly).
- * 
- * Please note:
- * This thread is designed to be used only if absolutely necessary.
- * That is, if you MUST use a class that doesn't yet support pure GCD.
- * If there is a GCD alternative, you should be using it instead.
- * For example, do NOT use NSTimer. Instead setup a GCD timer using a dispatch_source.
-**/
-- (NSThread *)xmppUtilityThread;
-- (NSRunLoop *)xmppUtilityRunLoop;
-
 @end
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -759,20 +785,9 @@ extern const NSTimeInterval XMPPStreamTimeoutNone;
  * Servers have the option of requiring connections to be secured during the opening process.
  * If this is the case, the XMPPStream will automatically attempt to properly secure the connection.
  * 
- * The possible keys and values for the security settings are well documented.
- * Some possible keys are:
- * - kCFStreamSSLLevel
- * - kCFStreamSSLAllowsExpiredCertificates
- * - kCFStreamSSLAllowsExpiredRoots
- * - kCFStreamSSLAllowsAnyRoot
- * - kCFStreamSSLValidatesCertificateChain
- * - kCFStreamSSLPeerName
- * - kCFStreamSSLCertificates
- * 
- * Please refer to Apple's documentation for associated values, as well as other possible keys.
- * 
- * The dictionary of settings is what will be passed to the startTLS method of ther underlying AsyncSocket.
- * The AsyncSocket header file also contains a discussion of the security consequences of various options.
+ * The dictionary of settings is what will be passed to the startTLS method of the underlying GCDAsyncSocket.
+ * The GCDAsyncSocket header file contains a discussion of the available key/value pairs,
+ * as well as the security consequences of various options.
  * It is recommended reading if you are planning on implementing this method.
  * 
  * The dictionary of settings that are initially passed will be an empty dictionary.
@@ -788,8 +803,51 @@ extern const NSTimeInterval XMPPStreamTimeoutNone;
  * These settings are most likely the right fit for most production environments,
  * but may need to be tweaked for development or testing,
  * where the development server may be using a self-signed certificate.
+ * 
+ * Note: If your development server is using a self-signed certificate,
+ * you likely need to add GCDAsyncSocketManuallyEvaluateTrust=YES to the settings.
+ * Then implement the xmppStream:didReceiveTrust:completionHandler: delegate method to perform custom validation.
 **/
 - (void)xmppStream:(XMPPStream *)sender willSecureWithSettings:(NSMutableDictionary *)settings;
+
+/**
+ * Allows a delegate to hook into the TLS handshake and manually validate the peer it's connecting to.
+ *
+ * This is only called if the stream is secured with settings that include:
+ * - GCDAsyncSocketManuallyEvaluateTrust == YES
+ * That is, if a delegate implements xmppStream:willSecureWithSettings:, and plugs in that key/value pair.
+ *
+ * Thus this delegate method is forwarding the TLS evaluation callback from the underlying GCDAsyncSocket.
+ *
+ * Typically the delegate will use SecTrustEvaluate (and related functions) to properly validate the peer.
+ *
+ * Note from Apple's documentation:
+ *   Because [SecTrustEvaluate] might look on the network for certificates in the certificate chain,
+ *   [it] might block while attempting network access. You should never call it from your main thread;
+ *   call it only from within a function running on a dispatch queue or on a separate thread.
+ *
+ * This is why this method uses a completionHandler block rather than a normal return value.
+ * The idea is that you should be performing SecTrustEvaluate on a background thread.
+ * The completionHandler block is thread-safe, and may be invoked from a background queue/thread.
+ * It is safe to invoke the completionHandler block even if the socket has been closed.
+ * 
+ * Keep in mind that you can do all kinds of cool stuff here.
+ * For example:
+ * 
+ * If your development server is using a self-signed certificate,
+ * then you could embed info about the self-signed cert within your app, and use this callback to ensure that
+ * you're actually connecting to the expected dev server.
+ * 
+ * Also, you could present certificates that don't pass SecTrustEvaluate to the client.
+ * That is, if SecTrustEvaluate comes back with problems, you could invoke the completionHandler with NO,
+ * and then ask the client if the cert can be trusted. This is similar to how most browsers act.
+ * 
+ * Generally, only one delegate should implement this method.
+ * However, if multiple delegates implement this method, then the first to invoke the completionHandler "wins".
+ * And subsequent invocations of the completionHandler are ignored.
+**/
+- (void)xmppStream:(XMPPStream *)sender didReceiveTrust:(SecTrustRef)trust
+                                      completionHandler:(void (^)(BOOL shouldTrustPeer))completionHandler;
 
 /**
  * This method is called after the stream has been secured via SSL/TLS.
@@ -924,19 +982,45 @@ extern const NSTimeInterval XMPPStreamTimeoutNone;
 
 /**
  * These methods are called after failing to send the respective XML elements over the stream.
+ * This occurs when the stream gets disconnected before the element can get sent out.
 **/
 - (void)xmppStream:(XMPPStream *)sender didFailToSendIQ:(XMPPIQ *)iq error:(NSError *)error;
 - (void)xmppStream:(XMPPStream *)sender didFailToSendMessage:(XMPPMessage *)message error:(NSError *)error;
 - (void)xmppStream:(XMPPStream *)sender didFailToSendPresence:(XMPPPresence *)presence error:(NSError *)error;
 
 /**
+ * This method is called if the XMPP Stream's jid changes.
+**/
+- (void)xmppStreamDidChangeMyJID:(XMPPStream *)xmppStream;
+
+/**
  * This method is called if the disconnect method is called.
  * It may be used to determine if a disconnection was purposeful, or due to an error.
+ * 
+ * Note: A disconnect may be either "clean" or "dirty".
+ * A "clean" disconnect is when the stream sends the closing </stream:stream> stanza before disconnecting.
+ * A "dirty" disconnect is when the stream simply closes its TCP socket.
+ * In most cases it makes no difference how the disconnect occurs,
+ * but there are a few contexts in which the difference has various protocol implications.
+ * 
+ * @see xmppStreamDidSendClosingStreamStanza
 **/
 - (void)xmppStreamWasToldToDisconnect:(XMPPStream *)sender;
 
 /**
- * This methods is called if the XMPP Stream's connect times out
+ * This method is called after the stream has sent the closing </stream:stream> stanza.
+ * This signifies a "clean" disconnect.
+ * 
+ * Note: A disconnect may be either "clean" or "dirty".
+ * A "clean" disconnect is when the stream sends the closing </stream:stream> stanza before disconnecting.
+ * A "dirty" disconnect is when the stream simply closes its TCP socket.
+ * In most cases it makes no difference how the disconnect occurs,
+ * but there are a few contexts in which the difference has various protocol implications.
+**/
+- (void)xmppStreamDidSendClosingStreamStanza:(XMPPStream *)sender;
+
+/**
+ * This methods is called if the XMPP stream's connect times out.
 **/
 - (void)xmppStreamConnectDidTimeout:(XMPPStream *)sender;
 
@@ -947,7 +1031,9 @@ extern const NSTimeInterval XMPPStreamTimeoutNone;
  * Some examples:
  * - The TCP socket was unexpectedly disconnected.
  * - The SRV resolution of the domain failed.
- * - Error parsing xml sent from server. 
+ * - Error parsing xml sent from server.
+ * 
+ * @see xmppStreamConnectDidTimeout:
 **/
 - (void)xmppStreamDidDisconnect:(XMPPStream *)sender withError:(NSError *)error;
 

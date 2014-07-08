@@ -60,12 +60,12 @@
 
 static XMPPRoomCoreDataStorage *sharedInstance;
 
-+ (XMPPRoomCoreDataStorage *)sharedInstance
++ (instancetype)sharedInstance
 {
 	static dispatch_once_t onceToken;
 	dispatch_once(&onceToken, ^{
 		
-		sharedInstance = [[XMPPRoomCoreDataStorage alloc] initWithDatabaseFilename:nil];
+		sharedInstance = [[XMPPRoomCoreDataStorage alloc] initWithDatabaseFilename:nil storeOptions:nil];
 	});
 	
 	return sharedInstance;
