@@ -287,7 +287,6 @@ typedef SCNetworkConnectionFlags SCNetworkReachabilityFlags;
 	
 	// We're now connected and properly authenticated.
 	// Should we get accidentally disconnected we should automatically reconnect (if autoReconnect is set).
-    NIDINFO(@"Authencitate - should reconnect YES!");
 	[self setShouldReconnect:YES];
 }
 
