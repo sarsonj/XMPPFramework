@@ -215,7 +215,7 @@ NSString *const XMPPJabberRPCErrorDomain = @"XMPPJabberRPCErrorDomain";
 {
 
     XMPPLogTrace();
-    NIDINFO(@"Send rpc: %@", [iq prettyXMLString]);
+//    NIDINFO(@"Send rpc: %@", [iq prettyXMLString]);
 	NSString *elementID = [iq elementID];
 
 	dispatch_source_t timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, moduleQueue);
@@ -248,10 +248,10 @@ NSString *const XMPPJabberRPCErrorDomain = @"XMPPJabberRPCErrorDomain";
 
 - (void)timeoutRemoveRpcID:(NSString *)elementID
 {
-    NIDINFO(@"Timeout remove %@", elementID);
+//    NIDINFO(@"Timeout remove %@", elementID);
 	XMPPLogTrace();
 	RPCID *rpcID = [rpcIDs objectForKey:elementID];
-    NIDINFO(@"Is here %@ - %@", elementID, rpcID);
+//    NIDINFO(@"Is here %@ - %@", elementID, rpcID);
 	if (rpcID)
 	{
 		[rpcID cancelTimer];
@@ -304,7 +304,6 @@ NSString *const XMPPJabberRPCErrorDomain = @"XMPPJabberRPCErrorDomain";
 				
 				//TODO: parse iq and generate response.
 				response = [iq methodResponse:&error];
-                NIDINFO(@"RPC response %@", response);
 				
 				if (error == nil) {
 					[multicastDelegate jabberRPC:self elementID:elementID didReceiveMethodResponse:response forIQ:iq];

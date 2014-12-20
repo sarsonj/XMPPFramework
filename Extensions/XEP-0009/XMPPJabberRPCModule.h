@@ -35,7 +35,6 @@ extern NSString *const XMPPJabberRPCErrorDomain;
 
 @end
 
-
 @protocol XMPPJabberRPCModuleDelegate
 @optional
 
