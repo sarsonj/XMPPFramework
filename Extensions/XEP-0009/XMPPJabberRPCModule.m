@@ -57,7 +57,7 @@ NSString *const XMPPJabberRPCErrorDomain = @"XMPPJabberRPCErrorDomain";
 	if ((self = [super init]))
 	{
 		rpcID = [aRpcID copy];
-		
+
 		timer = aTimer;
 		#if !OS_OBJECT_USE_OBJC
 		dispatch_retain(timer);
@@ -94,7 +94,7 @@ NSString *const XMPPJabberRPCErrorDomain = @"XMPPJabberRPCErrorDomain";
 - (void)dealloc
 {
 	[self cancelTimer];
-	
+
 }
 
 @end
@@ -111,11 +111,11 @@ NSString *const XMPPJabberRPCErrorDomain = @"XMPPJabberRPCErrorDomain";
 {
     /*
 	__block NSTimeInterval result;
-	
+
 	dispatch_block_t block = ^{
 		result = defaultTimeout;
 	};
-	
+
 	if (dispatch_get_specific(moduleQueueTag))
 		block();
 	else
@@ -136,7 +136,7 @@ NSString *const XMPPJabberRPCErrorDomain = @"XMPPJabberRPCErrorDomain";
 		XMPPLogTrace();
 		defaultTimeout = newDefaultTimeout;
 	};
-	
+
 	if (dispatch_get_specific(moduleQueueTag))
 		block();
 	else
@@ -161,7 +161,7 @@ NSString *const XMPPJabberRPCErrorDomain = @"XMPPJabberRPCErrorDomain";
 	if ((self = [super initWithDispatchQueue:queue]))
 	{
 		XMPPLogTrace();
-		
+
 		rpcIDs = [[NSMutableDictionary alloc] initWithCapacity:5];
 		defaultTimeout = 14.0;
 	}
@@ -171,34 +171,34 @@ NSString *const XMPPJabberRPCErrorDomain = @"XMPPJabberRPCErrorDomain";
 - (BOOL)activate:(XMPPStream *)aXmppStream
 {
 	XMPPLogTrace();
-	
+
 	if ([super activate:aXmppStream])
 	{
 	#ifdef _XMPP_CAPABILITIES_H
 		[xmppStream autoAddDelegate:self delegateQueue:moduleQueue toModulesOfClass:[XMPPCapabilities class]];
 	#endif
-		
+
 		return YES;
 	}
-	
+
 	return NO;
 }
 
 - (void)deactivate
 {
 	XMPPLogTrace();
-	
+
 #ifdef _XMPP_CAPABILITIES_H
 	[xmppStream removeAutoDelegate:self delegateQueue:moduleQueue fromModulesOfClass:[XMPPCapabilities class]];
 #endif
-	
+
 	[super deactivate];
 }
 
 - (void)dealloc
 {
 	XMPPLogTrace();
-	
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -222,26 +222,22 @@ NSString *const XMPPJabberRPCErrorDomain = @"XMPPJabberRPCErrorDomain";
     NSString __block *blockElementID = elementID;
     XMPPJabberRPCModule* __block blockModule = self;
 	dispatch_source_set_event_handler(timer, ^{ @autoreleasepool {
-		
+
 			[blockModule timeoutRemoveRpcID:blockElementID];
             blockElementID = nil;
             blockModule = nil;
 	}});
-	
+
 	dispatch_time_t tt = dispatch_time(DISPATCH_TIME_NOW, (timeout * NSEC_PER_SEC));
-	
+
 	dispatch_source_set_timer(timer, tt, DISPATCH_TIME_FOREVER, 0);
 	dispatch_resume(timer);
 	RPCID *rpcID = [[RPCID alloc] initWithRpcID:elementID timer:timer];
-    // memory leak bugfix - the release needs to be called!
-#if NEEDS_DISPATCH_RETAIN_RELEASE
-    dispatch_release(timer);
-#endif
-    timer = NULL;
-	[rpcIDs setObject:rpcID forKey:elementID];
-	
+
+	rpcIDs[elementID] = rpcID;
+
 	[xmppStream sendElement:iq];
-	
+
 	return elementID;
 }
 
@@ -249,18 +245,17 @@ NSString *const XMPPJabberRPCErrorDomain = @"XMPPJabberRPCErrorDomain";
 {
 //    NIDINFO(@"Timeout remove %@", elementID);
 	XMPPLogTrace();
-	RPCID *rpcID = [rpcIDs objectForKey:elementID];
-//    NIDINFO(@"Is here %@ - %@", elementID, rpcID);
+
+	RPCID *rpcID = rpcIDs[elementID];
 	if (rpcID)
 	{
 		[rpcID cancelTimer];
 		[rpcIDs removeObjectForKey:elementID];
-		
+
 		NSError *error = [NSError errorWithDomain:XMPPJabberRPCErrorDomain
-		                                     code:1400
-		                                 userInfo:[NSDictionary dictionaryWithObjectsAndKeys:
-		                                          @"Request timed out", @"error",nil]];
-		
+                                         code:1400
+                                     userInfo:@{@"error" : @"Request timed out"}];
+
 		[multicastDelegate jabberRPC:self elementID:elementID didReceiveError:error];
 	}
 }
@@ -272,64 +267,62 @@ NSString *const XMPPJabberRPCErrorDomain = @"XMPPJabberRPCErrorDomain";
 - (BOOL)xmppStream:(XMPPStream *)sender didReceiveIQ:(XMPPIQ *)iq
 {
 	XMPPLogTrace();
-	
+
 	if ([iq isJabberRPC])
 	{
 		if ([iq isResultIQ] || [iq isErrorIQ])
 		{
 			// Example:
-			// 
+			//
 			// <iq from="deusty.com" to="robbiehanson@deusty.com/work" id="abc123" type="result"/>
-			
+
 			NSString *elementID = [iq elementID];
-			
+
 			// check if this is a JabberRPC query
 			// we could check the query element, but we should be able to do a lookup based on the unique elementID
 			// because we send an ID, we should get one back
-//            NIDINFO(@"Looking for RPC ID: %@", elementID);
-//            NIDINFO(@"Has?: %@", [rpcIDs objectForKey:elementID]);
-			RPCID *rpcID =  [rpcIDs objectForKey:elementID];
+
+			RPCID *rpcID = rpcIDs[elementID];
 			if (rpcID == nil)
 			{
 				return NO;
 			}
-			
+
 			XMPPLogVerbose(@"%@: Received RPC response!", THIS_FILE);
-			
+
 			if ([iq isResultIQ])
 			{
 				id response;
 				NSError *error = nil;
-				
+
 				//TODO: parse iq and generate response.
 				response = [iq methodResponse:&error];
-				
+
 				if (error == nil) {
 					[multicastDelegate jabberRPC:self elementID:elementID didReceiveMethodResponse:response forIQ:iq];
 				} else {
 					[multicastDelegate jabberRPC:self elementID:elementID didReceiveError:error];
 				}
-				
+
 			}
 			else
 			{
 				// TODO: implement error parsing
 				// not much specified in XEP, only 403 forbidden error
 				NSXMLElement *errorElement = [iq childErrorElement];
-				NSError *error = [NSError errorWithDomain:XMPPJabberRPCErrorDomain 
-													 code:[errorElement attributeIntValueForName:@"code"] 
-												 userInfo:[NSDictionary dictionaryWithObjectsAndKeys:	
-														   [errorElement attributesAsDictionary],@"error",
-														   [[errorElement childAtIndex:0] name], @"condition",
-														   iq,@"iq",
-														   nil]];
-				
+				NSError *error = [NSError errorWithDomain:XMPPJabberRPCErrorDomain
+                                             code:[errorElement attributeIntValueForName:@"code"]
+                                         userInfo:@{
+                                                                                      @"error" : [errorElement attributesAsDictionary],
+                                                                                      @"condition" : [[errorElement childAtIndex:0] name],
+                                                                                      @"iq" : iq}];
+
 				[multicastDelegate jabberRPC:self elementID:elementID didReceiveError:error];
 			}
-			
+
 			[rpcID cancelTimer];
 			[rpcIDs removeObjectForKey:elementID];
-			
+
 #ifdef _XMPP_CAPABILITIES_H
 		} else if ([iq isSetIQ]) {
 			// we would receive set when implementing Jabber-RPC server
@@ -363,11 +356,11 @@ NSString *const XMPPJabberRPCErrorDomain = @"XMPPJabberRPCErrorDomain";
 #endif
             delSemaphore = NULL;
             delGroup = NULL;
-            
+
             return responded;
 #endif
 		}
-		
+
 		// Jabber-RPC doesn't use get iq type
 	}
 	return NO;
@@ -384,7 +377,7 @@ NSString *const XMPPJabberRPCErrorDomain = @"XMPPJabberRPCErrorDomain";
 - (void)xmppCapabilities:(XMPPCapabilities *)sender collectingMyCapabilities:(NSXMLElement *)query
 {
 	XMPPLogTrace();
-	
+
 	// <query xmlns="http://jabber.org/protocol/disco#info">
 	//   ...
 	//   <identity category='automation' type='rpc'/>

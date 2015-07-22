@@ -21,8 +21,6 @@
 
 #if DEBUG
   static const int xmppLogLevel = XMPP_LOG_LEVEL_ERROR;
-#else
-  static const int xmppLogLevel = XMPP_LOG_LEVEL_ERROR;
 #endif
 
 NSString *const kXMPPNSvCardTemp = @"vcard-temp";
@@ -858,7 +856,7 @@ NSString *const kXMPPvCardTempElement = @"vCard";
 	}
 	
 	if (elem != nil) {
-		for (NSString *cls in [NSArray arrayWithObjects:@"PUBLIC", @"PRIVATE", @"CONFIDENTIAL", nil]) {
+		for (NSString *cls in @[@"PUBLIC", @"PRIVATE", @"CONFIDENTIAL"]) {
 			NSXMLElement *priv = [elem elementForName:cls];
 			if (priv != nil) {
 				[elem removeChildAtIndex:[[elem children] indexOfObject:priv]];
