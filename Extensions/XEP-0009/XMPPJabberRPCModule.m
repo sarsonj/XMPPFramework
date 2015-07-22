@@ -214,7 +214,6 @@ NSString *const XMPPJabberRPCErrorDomain = @"XMPPJabberRPCErrorDomain";
 {
 
     XMPPLogTrace();
-//    NIDINFO(@"Send rpc: %@", [iq prettyXMLString]);
 	NSString *elementID = [iq elementID];
 
 	dispatch_source_t timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, moduleQueue);
@@ -243,7 +242,6 @@ NSString *const XMPPJabberRPCErrorDomain = @"XMPPJabberRPCErrorDomain";
 
 - (void)timeoutRemoveRpcID:(NSString *)elementID
 {
-//    NIDINFO(@"Timeout remove %@", elementID);
 	XMPPLogTrace();
 
 	RPCID *rpcID = rpcIDs[elementID];
