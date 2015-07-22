@@ -83,7 +83,6 @@ NSString *const XMPPJabberRPCErrorDomain = @"XMPPJabberRPCErrorDomain";
 
 	if (timer)
 	{
-        NIDINFO(@"Cancel timer %i", timer);
 		dispatch_source_cancel(timer);
 		#if !OS_OBJECT_USE_OBJC
 		dispatch_release(timer);

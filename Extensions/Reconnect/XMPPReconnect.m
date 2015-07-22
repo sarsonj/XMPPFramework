@@ -322,7 +322,6 @@ typedef SCNetworkConnectionFlags SCNetworkReachabilityFlags;
 	
 	// We should not automatically attempt to reconnect when the connection closes.
 
-    NIDINFO(@"Told to disconnect");
 
 	[self stop];
 }
@@ -535,7 +534,6 @@ static void XMPPReconnectReachabilityCallback(SCNetworkReachabilityRef target, S
 
 - (void)maybeAttemptReconnectWithReachabilityFlags:(SCNetworkReachabilityFlags)reachabilityFlags
 {
-    NIDINFO(@"Reachability flags: %i", reachabilityFlags);
 
 	if (!dispatch_get_specific(moduleQueueTag))
 	{
@@ -608,12 +606,10 @@ static void XMPPReconnectReachabilityCallback(SCNetworkReachabilityRef target, S
 						[self setMultipleReachabilityChanges:NO];
 						previousReachabilityFlags = reachabilityFlags;
 						// sarsonj fix - check for actual XMPP server first
-                        [[LoginManager sharedLoginManager] realoadActualXMPPServer:^(NSString *serverXml, int serverPort) {
-                            NIDINFO(@"Server hostname update %@", serverXml);
+                        [[LoginManager instance] realoadActualXMPPServer:^(NSString *serverXml, int serverPort) {
                             [xmppStream setHostPort:serverPort];
                             [xmppStream setHostName:serverXml];
                         }];
-						
                         if (self.usesOldSchoolSecureConnect)
                         {
                             [xmppStream oldSchoolSecureConnectWithTimeout:XMPPStreamTimeoutNone error:nil];
