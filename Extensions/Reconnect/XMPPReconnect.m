@@ -605,13 +605,7 @@ static void XMPPReconnectReachabilityCallback(SCNetworkReachabilityRef target, S
 					{
 						[self setMultipleReachabilityChanges:NO];
 						previousReachabilityFlags = reachabilityFlags;
-						// sarsonj fix - check for actual XMPP server first
-
-/*                        [[LoginManager instance] realoadActualXMPPServer:^(NSString *serverXml, int serverPort) {
-                            [xmppStream setHostPort:serverPort];
-                            [xmppStream setHostName:serverXml];
-                        }];
-*/                        if (self.usesOldSchoolSecureConnect)
+                        if (self.usesOldSchoolSecureConnect)
                         {
                             [xmppStream oldSchoolSecureConnectWithTimeout:XMPPStreamTimeoutNone error:nil];
                         }
