@@ -39,7 +39,7 @@ s.subspec 'Core' do |core|
 core.source_files = ['XMPPFramework.h', 'Core/**/*.{h,m}', 'Vendor/libidn/*.h', 'Authentication/**/*.{h,m}', 'Categories/**/*.{h,m}', 'Utilities/**/*.{h,m}']
 core.vendored_libraries = 'Vendor/libidn/libidn.a'
 core.libraries = 'xml2', 'resolv'
-core.dependency 'CocoaLumberjack','~> 2.0'
+core.dependency 'CocoaLumberjack','~> 1.9'
 core.dependency 'CocoaAsyncSocket','~> 7.4.1'
 core.ios.dependency 'XMPPFramework/KissXML'
 end
