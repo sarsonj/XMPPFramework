@@ -11,6 +11,7 @@ s.platform = :ios, '6.0'
 s.platform = :tvos, '9.0'
 
 s.ios.frameworks = 'UIKit', 'Foundation'
+s.tvos.frameworks = 'UIKit', 'Foundation'
 s.osx.frameworks = 'Cocoa'
 
 s.license = { :type => 'BSD', :file => 'copying.txt' }
@@ -55,6 +56,7 @@ core.xcconfig = { 'HEADER_SEARCH_PATHS' => '$(inherited) $(SDKROOT)/usr/include/
 core.dependency 'CocoaLumberjack','~>1.9'
 core.dependency 'CocoaAsyncSocket','~>7.4.1'
 core.ios.dependency 'XMPPFramework/KissXML'
+core.tvos.dependency 'XMPPFramework/KissXML'
 end
 
 s.subspec 'Authentication' do |ss|
