@@ -4,9 +4,11 @@ s.version = '3.6.6'
 
 s.osx.deployment_target = '10.7'
 s.ios.deployment_target = '6.0'
+s.tvos.deployment_target = '9.0'
 
 s.platform = :osx, '10.7'
 s.platform = :ios, '6.0'
+s.platform = :tvos, '9.0'
 
 s.ios.frameworks = 'UIKit', 'Foundation'
 s.osx.frameworks = 'Cocoa'
