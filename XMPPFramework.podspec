@@ -4,20 +4,18 @@ s.version = '3.6.6'
 
 s.osx.deployment_target = '10.7'
 s.ios.deployment_target = '6.0'
-s.tvos.deployment_target = '9.0'
 
 s.platform = :osx, '10.7'
 s.platform = :ios, '6.0'
-s.platform = :tvos, '9.0'
 
 s.ios.frameworks = 'UIKit', 'Foundation'
 s.osx.frameworks = 'Cocoa'
 
 s.license = { :type => 'BSD', :file => 'copying.txt' }
 s.summary = 'An XMPP Framework in Objective-C for the Mac / iOS development community.'
-s.homepage = 'https://github.com/unisontech/XMPPFramework'
+s.homepage = 'https://github.com/processOne/XMPPFramework'
 s.author = { 'Robbie Hanson' => 'robbiehanson@deusty.com' }
-s.source = { :git => 'https://github.com/unisontech/XMPPFramework.git', :branch => 'pods' }
+s.source = { :git => 'https://github.com/processOne/XMPPFramework.git', :tag => s.version }
 s.resources = [ '**/*.{xcdatamodel,xcdatamodeld}']
 
 s.description = 'XMPPFramework provides a core implementation of RFC-3920 (the xmpp standard), along with
@@ -34,15 +32,26 @@ s.requires_arc = true
 # subspecs have been selected, include all of them wrapped in defines which
 # will be set by the relevant subspecs.
 
+s.prepare_command = <<-'END'
+echo '#import "XMPP.h"' > XMPPFramework.h
+grep '#define _XMPP_' -r /Extensions \
+| tr '-' '_' \
+| perl -pe 's/Extensions\/([A-z0-9_]*)\/([A-z]*.h).*/\n#ifdef HAVE_XMPP_SUBSPEC_\U\1\n\E#import "\2"\n#endif/' \
+>> XMPPFramework.h
+END
+
 s.preserve_path = 'module/module.modulemap'
-s.module_map = 'module/module.modulemap'
+#s.module_map = 'module/module.modulemap'
 
 s.subspec 'Core' do |core|
 core.source_files = ['XMPPFramework.h', 'Core/**/*.{h,m}', 'Vendor/libidn/*.h', 'Authentication/**/*.{h,m}', 'Categories/**/*.{h,m}', 'Utilities/**/*.{h,m}']
 core.vendored_libraries = 'Vendor/libidn/libidn.a'
 core.libraries = 'xml2', 'resolv'
-core.dependency 'CocoaLumberjack','~> 1.9'
-core.dependency 'CocoaAsyncSocket','~> 7.4.1'
+core.xcconfig = { 'HEADER_SEARCH_PATHS' => '$(inherited) $(SDKROOT)/usr/include/libxml2 $(PODS_ROOT)/XMPPFramework/module $(SDKROOT)/usr/include/libresolv',
+'LIBRARY_SEARCH_PATHS' => '"$(PODS_ROOT)/XMPPFramework/Vendor/libidn"', 'CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES' => 'YES', 'OTHER_LDFLAGS' => '"-lxml2"', 'ENABLE_BITCODE' => 'NO'
+}
+core.dependency 'CocoaLumberjack','~>1.9'
+core.dependency 'CocoaAsyncSocket','~>7.4.1'
 core.ios.dependency 'XMPPFramework/KissXML'
 end
 
@@ -59,13 +68,10 @@ ss.dependency 'XMPPFramework/Core'
 end
 
 s.subspec 'KissXML' do |ss|
-ss.source_files = 'Vendor/KissXML/**/*.{h,m}'
+ss.source_files = ['Vendor/KissXML/**/*.{h,m}', 'module/module.modulemap']
+ss.libraries = 'xml2','resolv'
 ss.xcconfig = {
-'HEADER_SEARCH_PATHS' => '$(SDKROOT)/usr/include/libxml2 $(SDKROOT)/usr/include/libresolv $(PODS_ROOT)/XMPPFramework/module',
-'LIBRARY_SEARCH_PATHS' => '$(PODS_ROOT)/XMPPFramework/Vendor/libidn',
-'CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES' => 'YES',
-'OTHER_LDFLAGS' => '"$(inherited)" "-lxml2" "-objc"',
-'ENABLE_BITCODE' => 'NO'
+'HEADER_SEARCH_PATHS' => '$(inherited) $(SDKROOT)/usr/include/libxml2 $(PODS_ROOT)/XMPPFramework/module $(SDKROOT)/usr/include/libresolv'
 }
 end
 
@@ -214,6 +220,13 @@ ss.source_files = 'Extensions/XEP-0136/**/*.{h,m}'
 ss.dependency 'XMPPFramework/CoreDataStorage'
 ss.dependency 'XMPPFramework/XEP-0203'
 ss.dependency 'XMPPFramework/XEP-0085'
+ss.prefix_header_contents = "#define HAVE_XMPP_SUBSPEC_#{name.upcase.sub('-', '_')}"
+end
+
+s.subspec 'XEP-0153' do |ss|
+ss.source_files = ['Extensions/XEP-0153/**/*.{h,m}', 'Extensions/XEP-0082/NSDate+XMPPDateTimeProfiles.h']
+ss.dependency 'XMPPFramework/Core'
+ss.dependency 'XMPPFramework/XEP-0054'
 ss.prefix_header_contents = "#define HAVE_XMPP_SUBSPEC_#{name.upcase.sub('-', '_')}"
 end
 
