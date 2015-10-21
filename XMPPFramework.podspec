@@ -1,5 +1,5 @@
 Pod::Spec.new do |s|
-s.name = 'uXMPPFramework'
+s.name = 'XMPPFramework'
 s.version = '3.6.6'
 
 s.osx.deployment_target = '10.7'
@@ -41,7 +41,7 @@ core.vendored_libraries = 'Vendor/libidn/libidn.a'
 core.libraries = 'xml2', 'resolv'
 core.dependency 'CocoaLumberjack','~> 2.0'
 core.dependency 'CocoaAsyncSocket','~> 7.4.1'
-core.ios.dependency 'uXMPPFramework/KissXML'
+core.ios.dependency 'XMPPFramework/KissXML'
 end
 
 s.subspec 'Authentication' do |ss|
