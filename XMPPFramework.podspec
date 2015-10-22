@@ -4,13 +4,16 @@ s.version = '3.6.5'
 
 s.osx.deployment_target = '10.7'
 s.ios.deployment_target = '6.0'
+s.tvos.deployment_target = '9.0'
 
 #s.platform = { 'ios' => '5.0',  'osx' => '10.7'}
 
 s.platform = :osx, '10.7'
 s.platform = :ios, '6.0'
+s.platform = :tvos, '9.0'
 
 s.ios.frameworks = 'UIKit', 'Foundation'
+s.tvos.frameworks = 'UIKit', 'Foundation'
 s.osx.frameworks = 'Cocoa'
 
 s.license = { :type => 'BSD', :file => 'copying.txt' }
@@ -68,6 +71,7 @@ core.dependency 'MulticastDelegate', '1.0.0'
 core.dependency 'CocoaLumberjack','~>1.9'
 core.dependency 'CocoaAsyncSocket','~>7.4.1'
 core.ios.dependency 'XMPPFramework/KissXML'
+core.tvos.dependency 'XMPPFramework/KissXML'
 #core.osx.dependency 'XMPPFramework/SystemInputActivityMonitor'
 end
 
