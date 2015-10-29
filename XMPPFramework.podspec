@@ -58,7 +58,8 @@ CMD
 s.subspec 'Core' do |core|
 core.source_files = ['XMPPFramework.h', 'Core/**/*.{h,m}', 'Vendor/libidn/*.h', 'Authentication/**/*.{h,m}', 'Categories/**/*.{h,m}', 'Utilities/**/*.{h,m}']
 #, 'Authentication/**/*.{h,m}', 'Categories/**/*.{h,m}', 'Utilities/**/*.{h,m}'
-core.vendored_libraries = 'Vendor/libidn/libidn.a'
+core.ios.vendored_libraries = 'Vendor/libidn/libidn.a'
+core.tvos.vendored_libraries = 'Vendor/libidn/libidntvos.a'
 core.libraries = 'xml2','resolv'
 core.xcconfig = { 'HEADER_SEARCH_PATHS' => '$(SDKROOT)/usr/include/libxml2 $(SDKROOT)/usr/include/libresolv',
 'LIBRARY_SEARCH_PATHS' => '"$(PODS_ROOT)/XMPPFramework/Vendor/libidn"', 'OTHER_LDFLAGS' => '"-lxml2"', 'CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES' => 'YES'}
