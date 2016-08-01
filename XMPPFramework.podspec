@@ -66,7 +66,7 @@ core.xcconfig = { 'HEADER_SEARCH_PATHS' => '$(SDKROOT)/usr/include/libxml2 $(SDK
 #core.dependency 'XMPPFramework/Utilities'
 core.dependency 'MulticastDelegate', '1.0.0'
 core.dependency 'CocoaLumberjack','~>1.9'
-core.dependency 'CocoaAsyncSocket','~>7.4.1'
+core.dependency 'CocoaAsyncSocket','~>7.5.0'
 core.ios.dependency 'XMPPFramework/KissXML'
 #core.osx.dependency 'XMPPFramework/SystemInputActivityMonitor'
 end
