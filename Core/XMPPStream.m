@@ -213,6 +213,7 @@ enum XMPPStreamConfig
 
 		// Initialize socket
 		asyncSocket = [[GCDAsyncSocket alloc] initWithDelegate:self delegateQueue:xmppQueue];
+    asyncSocket.IPv4PreferredOverIPv6 = NO;
 //        [asyncSocket setTCPNoDelayEnabled:YES];
 	}
 	return self;
@@ -1260,6 +1261,7 @@ enum XMPPStreamConfig
 
 		// Initailize socket
 		asyncSocket = [[GCDAsyncSocket alloc] initWithDelegate:self delegateQueue:xmppQueue];
+    asyncSocket.IPv4PreferredOverIPv6 = NO;
 //        [asyncSocket setTCPNoDelayEnabled:YES];
 
             NSError *connectErr = nil;
