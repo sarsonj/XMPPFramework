@@ -603,16 +603,20 @@ static void XMPPReconnectReachabilityCallback(SCNetworkReachabilityRef target, S
 					[self setQueryingDelegates:NO];
 					if (shouldAttemptReconnect)
 					{
-						[self setMultipleReachabilityChanges:NO];
-						previousReachabilityFlags = reachabilityFlags;
-                        if (self.usesOldSchoolSecureConnect)
-                        {
-                            [xmppStream oldSchoolSecureConnectWithTimeout:XMPPStreamTimeoutNone error:nil];
-                        }
-                        else
-                        {
-                            [xmppStream connectWithTimeout:XMPPStreamTimeoutNone error:nil];
-                        }
+            [[LoginManager instance] realoadActualXMPPServer:^(NSString *serverXml, int serverPort) {
+                dispatch_async(moduleQueue, ^{ @autoreleasepool {
+      						[self setMultipleReachabilityChanges:NO];
+      						previousReachabilityFlags = reachabilityFlags;
+                  if (self.usesOldSchoolSecureConnect)
+                  {
+                      [xmppStream oldSchoolSecureConnectWithTimeout:XMPPStreamTimeoutNone error:nil];
+                  }
+                  else
+                  {
+                      [xmppStream connectWithTimeout:XMPPStreamTimeoutNone error:nil];
+                  }
+                }});
+            }];
 					}
 					else if ([self multipleReachabilityChanges])
 					{
