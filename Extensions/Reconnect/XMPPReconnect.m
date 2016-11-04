@@ -605,6 +605,8 @@ static void XMPPReconnectReachabilityCallback(SCNetworkReachabilityRef target, S
 					if (shouldAttemptReconnect)
 					{
             [[LoginManager instance] realoadActualXMPPServer:^(NSString *serverXml, int serverPort) {
+                [xmppStream setHostName:serverXml];
+                [xmppStream setHostPort:serverPort];
                 dispatch_async(moduleQueue, ^{ @autoreleasepool {
       						[self setMultipleReachabilityChanges:NO];
       						previousReachabilityFlags = reachabilityFlags;
