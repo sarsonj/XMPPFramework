@@ -2,6 +2,7 @@
 #import "XMPPStream.h"
 #import "XMPPLogging.h"
 #import "NSXMLElement+XMPP.h"
+#import "LoginManager.h"
 // #import "LoginManager.h"
 
 //#import "Reachability.h"
