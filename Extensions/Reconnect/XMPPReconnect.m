@@ -2,7 +2,7 @@
 #import "XMPPStream.h"
 #import "XMPPLogging.h"
 #import "NSXMLElement+XMPP.h"
-#import "LoginManager.h"
+//#import "LoginManager.h"
 // #import "LoginManager.h"
 
 //#import "Reachability.h"
@@ -604,7 +604,7 @@ static void XMPPReconnectReachabilityCallback(SCNetworkReachabilityRef target, S
 					[self setQueryingDelegates:NO];
 					if (shouldAttemptReconnect)
 					{
-            [[LoginManager instance] realoadActualXMPPServer:^(NSString *serverXml, int serverPort) {
+/*            [[LoginManager instance] realoadActualXMPPServer:^(NSString *serverXml, int serverPort) {
                 [xmppStream setHostName:serverXml];
                 [xmppStream setHostPort:serverPort];
                 dispatch_async(moduleQueue, ^{ @autoreleasepool {
@@ -619,7 +619,7 @@ static void XMPPReconnectReachabilityCallback(SCNetworkReachabilityRef target, S
                       [xmppStream connectWithTimeout:XMPPStreamTimeoutNone error:nil];
                   }
                 }});
-            }];
+            }];*/
 					}
 					else if ([self multipleReachabilityChanges])
 					{
