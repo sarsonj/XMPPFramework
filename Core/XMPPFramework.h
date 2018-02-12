@@ -63,7 +63,7 @@
 #import "XMPPRosterPrivate.h"
 #import "XMPPUser.h"
 #import "XMPPIQ+JabberRPC.h"
-#import "XMPPIQ+JabberRPCResonse.h"
+#import "XMPPIQ+JabberRPCResponse.h"
 #import "XMPPJabberRPCModule.h"
 #import "XMPPIQ+LastActivity.h"
 #import "XMPPLastActivity.h"
