@@ -610,7 +610,7 @@
 #pragma mark XMPPRosterStorage Protocol
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-- (void)beginRosterPopulationForXMPPStream:(XMPPStream *)stream
+- (void)beginRosterPopulationForXMPPStream:(XMPPStream *)stream withVersion:(NSString *)version
 {
 	XMPPLogTrace();
 	AssertParentQueue();
@@ -819,12 +819,12 @@
     return results;
 }
 
-- (void)getSubscription:(NSString **)subscription
-					ask:(NSString **)ask
-			   nickname:(NSString **)nickname
-				 groups:(NSArray **)groups
-				 forJID:(XMPPJID *)jid
-			 xmppStream:(XMPPStream *)stream
+- (void)getSubscription:(NSString * _Nullable * _Nullable)subscription
+                    ask:(NSString * _Nullable * _Nullable)ask
+               nickname:(NSString * _Nullable * _Nullable)nickname
+                 groups:(NSArray<NSString*> * _Nullable * _Nullable)groups
+                 forJID:(XMPPJID *)jid
+             xmppStream:(XMPPStream *)stream
 {
 
 	XMPPLogTrace();
