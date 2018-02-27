@@ -39,7 +39,8 @@ Pod::Spec.new do |s|
     ss.dependency 'MulticastDelegate'
 	  ss.dependency 'CocoaAsyncSocket', '~> 7.6.0'
 	  ss.dependency 'KissXML', '~> 5.2.0'
-	  ss.dependency 'libidn', '~> 1.33.0'
+    ss.dependency 'libidn', '~> 1.33.0'
+    ss.dependency 'MulticastDelegate'
   end
 
   s.subspec 'Swift' do |ss|

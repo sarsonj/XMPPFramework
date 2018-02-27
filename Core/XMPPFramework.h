@@ -26,7 +26,6 @@
 #import "NSNumber+XMPP.h"
 #import "NSXMLElement+XMPP.h"
 #import "DDList.h"
-#import "GCDMulticastDelegate.h"
 #import "RFImageToDataTransformer.h"
 #import "XMPPIDTracker.h"
 #import "XMPPSRVResolver.h"
