@@ -109,42 +109,31 @@ NSString *const XMPPJabberRPCErrorDomain = @"XMPPJabberRPCErrorDomain";
 
 - (NSTimeInterval)defaultTimeout
 {
-    /*
 	__block NSTimeInterval result;
-
+	
 	dispatch_block_t block = ^{
-		result = defaultTimeout;
+		result = self->defaultTimeout;
 	};
-
+	
 	if (dispatch_get_specific(moduleQueueTag))
 		block();
 	else
 		dispatch_sync(moduleQueue, block);
-	*/
-    @synchronized (self) {
-        NSTimeInterval result;
-        result = defaultTimeout;
-        return result;
-    }
-//	return result;
+	
+	return result;
 }
 
 - (void)setDefaultTimeout:(NSTimeInterval)newDefaultTimeout
 {
-    /*
 	dispatch_block_t block = ^{
 		XMPPLogTrace();
-		defaultTimeout = newDefaultTimeout;
+		self->defaultTimeout = newDefaultTimeout;
 	};
-
+	
 	if (dispatch_get_specific(moduleQueueTag))
 		block();
 	else
 		dispatch_async(moduleQueue, block);
-     */
-    @synchronized (self) {
-        defaultTimeout = newDefaultTimeout;
-    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -261,7 +250,80 @@ NSString *const XMPPJabberRPCErrorDomain = @"XMPPJabberRPCErrorDomain";
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma mark XMPPStream delegate
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+- (BOOL)xmppStream:(XMPPStream *)sender didReceiveIQ:(XMPPIQ *)iq
+{
+	XMPPLogTrace();
+	
+	if ([iq isJabberRPC])
+	{
+		if ([iq isResultIQ] || [iq isErrorIQ])
+		{
+			// Example:
+			// 
+			// <iq from="deusty.com" to="robbiehanson@deusty.com/work" id="abc123" type="result"/>
+			
+			NSString *elementID = [iq elementID];
+			
+			// check if this is a JabberRPC query
+			// we could check the query element, but we should be able to do a lookup based on the unique elementID
+			// because we send an ID, we should get one back
+			
+			RPCID *rpcID = rpcIDs[elementID];
+			if (rpcID == nil)
+			{
+				return NO;
+			}
+			
+			XMPPLogVerbose(@"%@: Received RPC response!", THIS_FILE);
+			
+			if ([iq isResultIQ])
+			{
+				id response;
+				NSError *error = nil;
+				
+				//TODO: parse iq and generate response.
+				response = [iq methodResponse:&error];
+				
+				if (error == nil) {
+					[multicastDelegate jabberRPC:self elementID:elementID didReceiveMethodResponse:response forIQ:iq];
+				} else {
+					[multicastDelegate jabberRPC:self elementID:elementID didReceiveError:error];
+				}
+				
+			}
+			else
+			{
+				// TODO: implement error parsing
+				// not much specified in XEP, only 403 forbidden error
+				NSXMLElement *errorElement = [iq childErrorElement];
+				NSError *error = [NSError errorWithDomain:XMPPJabberRPCErrorDomain
+                                             code:[errorElement attributeIntValueForName:@"code"]
+                                         userInfo:@{
+                                                                                      @"error" : [errorElement attributesAsDictionary],
+                                                                                      @"condition" : [[errorElement childAtIndex:0] name],
+                                                                                      @"iq" : iq}];
+				
+				[multicastDelegate jabberRPC:self elementID:elementID didReceiveError:error];
+			}
+			
+			[rpcID cancelTimer];
+			[rpcIDs removeObjectForKey:elementID];
+			
+#ifdef _XMPP_CAPABILITIES_H
+		} else if ([iq isSetIQ]) {
+			// we would receive set when implementing Jabber-RPC server
+			
+			[multicastDelegate jabberRPC:self didReceiveSetIQ:iq];
+#endif		
+		}
+		
+		// Jabber-RPC doesn't use get iq type
+	}
+	return NO;
+}
 
+
+/*
 - (BOOL)xmppStream:(XMPPStream *)sender didReceiveIQ:(XMPPIQ *)iq
 {
 	XMPPLogTrace();
@@ -362,7 +424,7 @@ NSString *const XMPPJabberRPCErrorDomain = @"XMPPJabberRPCErrorDomain";
 		// Jabber-RPC doesn't use get iq type
 	}
 	return NO;
-}
+}*/
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma mark XMPPCapabilities delegate
