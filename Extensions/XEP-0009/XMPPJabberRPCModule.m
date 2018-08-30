@@ -314,6 +314,7 @@ NSString *const XMPPJabberRPCErrorDomain = @"XMPPJabberRPCErrorDomain";
 			// we would receive set when implementing Jabber-RPC server
 			
 			[multicastDelegate jabberRPC:self didReceiveSetIQ:iq];
+			return YES;
 #endif		
 		}
 		
