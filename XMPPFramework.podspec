@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name = 'XMPPFramework'
-  s.version = '4.0'
+  s.version = '4.0.0'
 
   s.osx.deployment_target = '10.9'
   s.ios.deployment_target = '8.0'
@@ -37,10 +37,9 @@ Pod::Spec.new do |s|
     ss.resources = [ 'Extensions/**/*.{xcdatamodel,xcdatamodeld}']
     ss.dependency 'CocoaLumberjack' # Skip pinning version because of the awkward 2.x->3.x transition
     ss.dependency 'MulticastDelegate'
-	  ss.dependency 'CocoaAsyncSocket', '~> 7.6.0'
-	  ss.dependency 'KissXML', '~> 5.2.0'
-    ss.dependency 'libidn', '~> 1.33.0'
-    ss.dependency 'MulticastDelegate'
+	  ss.dependency 'CocoaAsyncSocket', '~> 7.6'
+	  ss.dependency 'KissXML', '~> 5.2'
+    ss.dependency 'libidn', '~> 1.35'
   end
 
   s.subspec 'Swift' do |ss|
